@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.SysClientMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.SysClient">
+        <id column="id" property="id" />
+        <result column="company_name" property="companyName" />
+        <result column="contact_person" property="contactPerson" />
+        <result column="phone" property="phone" />
+        <result column="address" property="address" />
+        <result column="login_account" property="loginAccount" />
+        <result column="login_password" property="loginPassword" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, company_name, contact_person, phone, address, login_account, login_password, create_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM sys_client
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM sys_client
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_client (
+            company_name, contact_person, phone, address, login_account, login_password, create_time
+        ) VALUES (
+            #{companyName}, #{contactPerson}, #{phone}, #{address}, #{loginAccount}, #{loginPassword}, #{createTime}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE sys_client
+        <set>
+            <if test="companyName != null"> company_name = #{companyName}, </if>
+            <if test="contactPerson != null"> contact_person = #{contactPerson}, </if>
+            <if test="phone != null"> phone = #{phone}, </if>
+            <if test="address != null"> address = #{address}, </if>
+            <if test="loginAccount != null"> login_account = #{loginAccount}, </if>
+            <if test="loginPassword != null"> login_password = #{loginPassword}, </if>
+            <if test="createTime != null"> create_time = #{createTime}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_client WHERE id = #{id}
+    </delete>
+
+</mapper>

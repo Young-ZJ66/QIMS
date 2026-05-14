@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.BizReportMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.BizReport">
+        <id column="id" property="id" />
+        <result column="report_no" property="reportNo" />
+        <result column="delegation_id" property="delegationId" />
+        <result column="reviewer_id" property="reviewerId" />
+        <result column="final_conclusion" property="finalConclusion" />
+        <result column="report_file_url" property="reportFileUrl" />
+        <result column="issue_time" property="issueTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, report_no, delegation_id, reviewer_id, final_conclusion, report_file_url, issue_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_report
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_report
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_report (
+            report_no, delegation_id, reviewer_id, final_conclusion, report_file_url, issue_time
+        ) VALUES (
+            #{reportNo}, #{delegationId}, #{reviewerId}, #{finalConclusion}, #{reportFileUrl}, #{issueTime}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE biz_report
+        <set>
+            <if test="reportNo != null"> report_no = #{reportNo}, </if>
+            <if test="delegationId != null"> delegation_id = #{delegationId}, </if>
+            <if test="reviewerId != null"> reviewer_id = #{reviewerId}, </if>
+            <if test="finalConclusion != null"> final_conclusion = #{finalConclusion}, </if>
+            <if test="reportFileUrl != null"> report_file_url = #{reportFileUrl}, </if>
+            <if test="issueTime != null"> issue_time = #{issueTime}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM biz_report WHERE id = #{id}
+    </delete>
+
+</mapper>

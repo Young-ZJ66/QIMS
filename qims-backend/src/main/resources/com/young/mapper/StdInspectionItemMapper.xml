@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.StdInspectionItemMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.StdInspectionItem">
+        <id column="id" property="id" />
+        <result column="standard_id" property="standardId" />
+        <result column="item_name" property="itemName" />
+        <result column="unit" property="unit" />
+        <result column="judge_type" property="judgeType" />
+        <result column="min_value" property="minValue" />
+        <result column="max_value" property="maxValue" />
+        <result column="text_standard" property="textStandard" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, standard_id, item_name, unit, judge_type, min_value, max_value, text_standard, create_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM std_inspection_item
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM std_inspection_item
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO std_inspection_item (
+            standard_id, item_name, unit, judge_type, min_value, max_value, text_standard, create_time
+        ) VALUES (
+            #{standardId}, #{itemName}, #{unit}, #{judgeType}, #{minValue}, #{maxValue}, #{textStandard}, #{createTime}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE std_inspection_item
+        <set>
+            <if test="standardId != null"> standard_id = #{standardId}, </if>
+            <if test="itemName != null"> item_name = #{itemName}, </if>
+            <if test="unit != null"> unit = #{unit}, </if>
+            <if test="judgeType != null"> judge_type = #{judgeType}, </if>
+            <if test="minValue != null"> min_value = #{minValue}, </if>
+            <if test="maxValue != null"> max_value = #{maxValue}, </if>
+            <if test="textStandard != null"> text_standard = #{textStandard}, </if>
+            <if test="createTime != null"> create_time = #{createTime}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM std_inspection_item WHERE id = #{id}
+    </delete>
+
+</mapper>

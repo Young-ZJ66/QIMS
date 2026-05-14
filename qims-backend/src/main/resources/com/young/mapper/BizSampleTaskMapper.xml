@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.BizSampleTaskMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.BizSampleTask">
+        <id column="id" property="id" />
+        <result column="delegation_id" property="delegationId" />
+        <result column="blind_sample_code" property="blindSampleCode" />
+        <result column="inspector_id" property="inspectorId" />
+        <result column="receive_time" property="receiveTime" />
+        <result column="finish_time" property="finishTime" />
+        <result column="receiver_id" property="receiverId" />
+        <result column="status" property="status" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, delegation_id, blind_sample_code, inspector_id, receive_time, finish_time, receiver_id, status
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_sample_task
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_sample_task
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_sample_task (
+            delegation_id, blind_sample_code, inspector_id, receive_time, finish_time, receiver_id, status
+        ) VALUES (
+            #{delegationId}, #{blindSampleCode}, #{inspectorId}, #{receiveTime}, #{finishTime}, #{receiverId}, #{status}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE biz_sample_task
+        <set>
+            <if test="delegationId != null"> delegation_id = #{delegationId}, </if>
+            <if test="blindSampleCode != null"> blind_sample_code = #{blindSampleCode}, </if>
+            <if test="inspectorId != null"> inspector_id = #{inspectorId}, </if>
+            <if test="receiveTime != null"> receive_time = #{receiveTime}, </if>
+            <if test="finishTime != null"> finish_time = #{finishTime}, </if>
+            <if test="receiverId != null"> receiver_id = #{receiverId}, </if>
+            <if test="status != null"> status = #{status}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM biz_sample_task WHERE id = #{id}
+    </delete>
+
+</mapper>

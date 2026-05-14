@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: qims-backend
+  
+  # MySQL 8.0 配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/qims_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+
+# 原生 MyBatis 配置
+mybatis:
+  mapper-locations: classpath*:com/young/mapper/**/*Mapper.xml
+  type-aliases-package: com.young.pojo
+  configuration:
+    # 开启驼峰命名自动映射
+    map-underscore-to-camel-case: true
+    # 打印SQL日志，方便调试
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

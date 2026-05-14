@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.young.mapper.SysOperateLogMapper">
+
+    <insert id="insert" parameterType="com.young.pojo.SysOperateLog">
+        INSERT INTO sys_operate_log (delegation_id, operator, action, action_type, description, create_time)
+        VALUES (#{delegationId}, #{operator}, #{action}, #{actionType}, #{description}, #{createTime})
+    </insert>
+
+    <select id="selectRecentLogs" resultType="com.young.pojo.SysOperateLog">
+        SELECT * FROM sys_operate_log 
+        <where>
+            <if test="delegationIds != null and delegationIds.size() > 0">
+                delegation_id IN 
+                <foreach item="item" collection="delegationIds" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+        ORDER BY create_time DESC LIMIT #{limit}
+    </select>
+
+</mapper>

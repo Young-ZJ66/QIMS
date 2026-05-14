@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.BizInspectionRecordMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.BizInspectionRecord">
+        <id column="id" property="id" />
+        <result column="task_id" property="taskId" />
+        <result column="item_id" property="itemId" />
+        <result column="measured_value" property="measuredValue" />
+        <result column="measured_text" property="measuredText" />
+        <result column="photo_url" property="photoUrl" />
+        <result column="result" property="result" />
+        <result column="attachment_url" property="attachmentUrl" />
+        <result column="inspect_time" property="inspectTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, task_id, item_id, measured_value, measured_text, photo_url, result, attachment_url, inspect_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_inspection_record
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_inspection_record
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_inspection_record (
+            task_id, item_id, measured_value, measured_text, photo_url, result, attachment_url, inspect_time
+        ) VALUES (
+            #{taskId}, #{itemId}, #{measuredValue}, #{measuredText}, #{photoUrl}, #{result}, #{attachmentUrl}, #{inspectTime}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE biz_inspection_record
+        <set>
+            <if test="taskId != null"> task_id = #{taskId}, </if>
+            <if test="itemId != null"> item_id = #{itemId}, </if>
+            <if test="measuredValue != null"> measured_value = #{measuredValue}, </if>
+            <if test="measuredText != null"> measured_text = #{measuredText}, </if>
+            <if test="photoUrl != null"> photo_url = #{photoUrl}, </if>
+            <if test="result != null"> result = #{result}, </if>
+            <if test="attachmentUrl != null"> attachment_url = #{attachmentUrl}, </if>
+            <if test="inspectTime != null"> inspect_time = #{inspectTime}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM biz_inspection_record WHERE id = #{id}
+    </delete>
+
+</mapper>

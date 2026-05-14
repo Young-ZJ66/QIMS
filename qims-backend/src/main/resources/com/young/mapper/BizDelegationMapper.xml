@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.BizDelegationMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.BizDelegation">
+        <id column="id" property="id" />
+        <result column="delegation_no" property="delegationNo" />
+        <result column="client_id" property="clientId" />
+        <result column="sample_name" property="sampleName" />
+        <result column="sample_specs" property="sampleSpecs" />
+        <result column="sample_quantity" property="sampleQuantity" />
+        <result column="standard_id" property="standardId" />
+        <result column="status" property="status" />
+        <result column="submit_time" property="submitTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, delegation_no, client_id, sample_name, sample_specs, sample_quantity, standard_id, status, submit_time
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_delegation
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_delegation
+    </select>
+
+    <select id="selectByClientId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_delegation
+        WHERE client_id = #{clientId}
+        ORDER BY id DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO biz_delegation (
+            delegation_no, client_id, sample_name, sample_specs, sample_quantity, standard_id, status, submit_time
+        ) VALUES (
+            #{delegationNo}, #{clientId}, #{sampleName}, #{sampleSpecs}, #{sampleQuantity}, #{standardId}, #{status}, #{submitTime}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE biz_delegation
+        <set>
+            <if test="delegationNo != null"> delegation_no = #{delegationNo}, </if>
+            <if test="clientId != null"> client_id = #{clientId}, </if>
+            <if test="sampleName != null"> sample_name = #{sampleName}, </if>
+            <if test="sampleSpecs != null"> sample_specs = #{sampleSpecs}, </if>
+            <if test="sampleQuantity != null"> sample_quantity = #{sampleQuantity}, </if>
+            <if test="standardId != null"> standard_id = #{standardId}, </if>
+            <if test="status != null"> status = #{status}, </if>
+            <if test="submitTime != null"> submit_time = #{submitTime}, </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM biz_delegation WHERE id = #{id}
+    </delete>
+
+</mapper>
