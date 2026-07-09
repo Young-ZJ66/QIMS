@@ -4,6 +4,9 @@ import com.young.pojo.BizInspectionRecord;
 import com.young.pojo.BizSampleTask;
 import com.young.pojo.BizDelegation;
 import com.young.pojo.StdInspectionItem;
+import com.young.pojo.enums.UserRole;
+import com.young.pojo.enums.TaskStatus;
+import com.young.pojo.enums.DelegationStatus;
 import com.young.service.BizInspectionRecordService;
 import com.young.mapper.BizSampleTaskMapper;
 import com.young.mapper.BizDelegationMapper;
@@ -97,10 +100,10 @@ public class BizInspectionRecordController {
             // 权限及幂等校验
             Object roleIdObj = request.getAttribute("roleId");
             Object userIdObj = request.getAttribute("userId");
-            if (roleIdObj == null || !String.valueOf(roleIdObj).equals("2") || userIdObj == null || !task.getInspectorId().equals(Long.valueOf(String.valueOf(userIdObj)))) {
+            if (roleIdObj == null || !String.valueOf(roleIdObj).equals(String.valueOf(UserRole.INSPECTOR.getCode())) || userIdObj == null || !task.getInspectorId().equals(Long.valueOf(String.valueOf(userIdObj)))) {
                 return Result.error("无权限：您不是该任务的被指派质检员");
             }
-            if (task.getStatus() != null && task.getStatus() == 1) {
+            if (task.getStatus() != null && task.getStatus() == TaskStatus.COMPLETED.getCode()) {
                 return Result.error("该任务已检测完成，不能重复提交数据");
             }
             
@@ -110,7 +113,7 @@ public class BizInspectionRecordController {
             }
             
             // 更新盲样任务状态为已完成 (1)
-            task.setStatus(1);
+            task.setStatus(TaskStatus.COMPLETED.getCode());
             task.setFinishTime(LocalDateTime.now());
             taskMapper.update(task);
 
@@ -126,13 +129,13 @@ public class BizInspectionRecordController {
 
             // 联动更新委托单状态为 2 (审核中)
             BizDelegation delegation = delegationMapper.selectById(task.getDelegationId());
-            if (delegation != null && delegation.getStatus() != null && delegation.getStatus() == 1) {
+            if (delegation != null && delegation.getStatus() != null && delegation.getStatus() == DelegationStatus.IN_PROGRESS.getCode()) {
                 List<BizSampleTask> allTasks = taskMapper.selectAll().stream()
                         .filter(t -> task.getDelegationId().equals(t.getDelegationId()))
                         .collect(Collectors.toList());
-                boolean allDone = allTasks.stream().allMatch(t -> t.getStatus() != null && t.getStatus() == 1);
+                boolean allDone = allTasks.stream().allMatch(t -> t.getStatus() != null && t.getStatus() == TaskStatus.COMPLETED.getCode());
                 if (allDone) {
-                    delegation.setStatus(2);
+                    delegation.setStatus(DelegationStatus.UNDER_REVIEW.getCode());
                     delegationMapper.update(delegation);
                 }
             }

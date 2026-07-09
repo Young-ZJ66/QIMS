@@ -2,6 +2,8 @@ package com.young.service.impl;
 
 import com.young.pojo.BizDelegation;
 import com.young.pojo.BizSampleTask;
+import com.young.pojo.enums.DelegationStatus;
+import com.young.pojo.enums.TaskStatus;
 import com.young.mapper.BizDelegationMapper;
 import com.young.mapper.BizSampleTaskMapper;
 import com.young.service.BizDelegationService;
@@ -68,7 +70,7 @@ public class BizDelegationServiceImpl implements BizDelegationService {
         delegation.setDelegationNo(delegationNo);
 
         // 设置初始状态：0-待收样
-        delegation.setStatus(0);
+        delegation.setStatus(DelegationStatus.WAIT_SAMPLE.getCode());
         delegation.setSubmitTime(LocalDateTime.now());
 
         mapper.insert(delegation);
@@ -90,12 +92,12 @@ public class BizDelegationServiceImpl implements BizDelegationService {
     @Transactional(rollbackFor = Exception.class)
     public String receiveSampleAndAssign(Long delegationId, Long inspectorId, Long receiverId) {
         BizDelegation delegation = mapper.selectById(delegationId);
-        if (delegation == null || delegation.getStatus() != 0) {
+        if (delegation == null || delegation.getStatus() != DelegationStatus.WAIT_SAMPLE.getCode()) {
             throw new RuntimeException("委托单不存在或当前状态无法收样");
         }
 
         // 1. 更新委托单状态：1-检测中
-        delegation.setStatus(1);
+        delegation.setStatus(DelegationStatus.IN_PROGRESS.getCode());
         mapper.update(delegation);
 
         // 2. 盲样化处理，隐去客户信息生成任务
@@ -119,7 +121,7 @@ public class BizDelegationServiceImpl implements BizDelegationService {
             task.setInspectorId(inspectorId);
             task.setReceiverId(receiverId);
             task.setReceiveTime(LocalDateTime.now());
-            task.setStatus(0); // 0-待检测
+            task.setStatus(TaskStatus.PENDING.getCode()); // 0-待检测
 
             taskMapper.insert(task);
 
