@@ -81,6 +81,7 @@ Desktop.ini
 .env
 .env.local
 .env.*.local
+.trae/
 
 # 临时文件
 *.tmp
