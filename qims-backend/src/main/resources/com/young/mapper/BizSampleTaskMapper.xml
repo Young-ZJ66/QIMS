@@ -28,6 +28,20 @@
         FROM biz_sample_task
     </select>
 
+    <!-- 按委托单ID查询盲样任务 -->
+    <select id="selectByDelegationId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_sample_task
+        WHERE delegation_id = #{delegationId}
+    </select>
+
+    <!-- 按检测员ID查询分配的任务 -->
+    <select id="selectByInspectorId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_sample_task
+        WHERE inspector_id = #{inspectorId}
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO biz_sample_task (
             delegation_id, blind_sample_code, inspector_id, receive_time, finish_time, receiver_id, status

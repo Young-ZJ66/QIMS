@@ -11,4 +11,6 @@ public interface BizReportMapper {
     int deleteById(Long id);
     BizReport selectById(Long id);
     List<BizReport> selectAll();
+    /** 按委托单ID批量查询报告 */
+    List<BizReport> selectByDelegationIds(@org.apache.ibatis.annotations.Param("delegationIds") List<Long> delegationIds);
 }

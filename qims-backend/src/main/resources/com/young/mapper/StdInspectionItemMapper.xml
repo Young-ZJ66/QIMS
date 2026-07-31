@@ -29,6 +29,23 @@
         FROM std_inspection_item
     </select>
 
+    <!-- 按标准ID查询检测项目 -->
+    <select id="selectByStandardId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM std_inspection_item
+        WHERE standard_id = #{standardId}
+    </select>
+
+    <!-- 批量查询 -->
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM std_inspection_item
+        WHERE id IN
+        <foreach item="id" collection="ids" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO std_inspection_item (
             standard_id, item_name, unit, judge_type, min_value, max_value, text_standard, create_time

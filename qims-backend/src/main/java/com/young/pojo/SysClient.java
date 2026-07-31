@@ -37,6 +37,10 @@ public class SysClient {
      */
     private String loginPassword;
     /**
+     * 状态：1正常，0禁用
+     */
+    private Integer status;
+    /**
      * 注册时间
      */
     private LocalDateTime createTime;

@@ -20,6 +20,10 @@
 - MySQL 8.0
 - JWT
 - iText PDF
+- BCrypt (密码加密)
+- PageHelper (分页)
+- AOP (权限切面)
+- Knife4j 4.4.0 (API 文档，访问 `/doc.html`)
 
 ## 项目结构
 
@@ -40,6 +44,8 @@ QIMS/
     │   │   ├── pojo/        # 实体类
     │   │   ├── config/      # 配置类
     │   │   ├── interceptor/ # 拦截器
+    │   │   ├── annotation/  # 自定义注解
+    │   │   ├── aspect/      # AOP 切面
     │   │   └── utils/       # 工具类
     │   └── resources/
     │       ├── sql/         # 数据库脚本
@@ -57,15 +63,16 @@ QIMS/
 
 ### 核心功能
 
-- 用户认证与授权（JWT）
+- 用户认证与授权（JWT + BCrypt 密码加密）
 - 委托管理
-- 样品任务管理
-- 检验记录管理
+- 样品任务管理（盲样化处理）
+- 检验记录管理（自动合格判定）
 - PDF报告生成
 - 标准管理
 - 检验项目管理
 - 客户管理
 - 数据看板（ECharts）
+- 基于注解的角色权限控制（@RequireRole + AOP）
 
 ## 快速开始
 
@@ -84,22 +91,26 @@ QIMS/
 CREATE DATABASE qims_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-1. 执行初始化脚本
+2. 执行初始化脚本
 
 ```bash
 # 文件位置：qims-backend/src/main/resources/sql/db_schema.sql
 ```
 
-1. 修改数据库连接配置
+3. 修改数据库连接配置
 
 ```yaml
 # 文件位置：qims-backend/src/main/resources/application.yml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/qims_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: root
-    password: your_password
+    password: 1234
 ```
+
+### 密码安全说明
+
+- 所有用户密码使用 **BCrypt** 加密存储
+- 默认密码统一为：**123456**
 
 ### 后端启动
 
@@ -110,6 +121,8 @@ mvn spring-boot:run
 
 后端服务地址：<http://localhost:8080>
 
+API 文档地址：<http://localhost:8080/doc.html>
+
 ### 前端启动
 
 ```bash
@@ -118,7 +131,7 @@ npm install
 npm run dev
 ```
 
-前端服务地址：<http://localhost:5173>
+前端服务地址：<http://localhost:3000>
 
 ## 默认账号
 
@@ -131,6 +144,19 @@ npm run dev
 | 客户1 | client1   |
 | 客户2 | client2   |
 | 客户3 | client3   |
+
+## 测试建议
+
+项目已引入 `spring-boot-starter-test` 依赖，建议为以下模块编写单元测试：
+
+- **Service 层**：业务逻辑、事务回滚、自动判定算法
+- **Controller 层**：权限校验、参数验证、API 响应格式
+- **Mapper 层**：条件查询、批量查询、分页查询
+
+```bash
+cd qims-backend
+mvn test
+```
 
 ## 联系方式
 

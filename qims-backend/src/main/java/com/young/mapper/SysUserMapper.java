@@ -11,4 +11,6 @@ public interface SysUserMapper {
     int deleteById(Long id);
     SysUser selectById(Long id);
     List<SysUser> selectAll();
+    /** 按用户名精确查询 */
+    SysUser selectByUsername(@org.apache.ibatis.annotations.Param("username") String username);
 }

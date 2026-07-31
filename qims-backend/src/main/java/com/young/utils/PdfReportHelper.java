@@ -39,6 +39,8 @@ import javax.imageio.ImageIO;
 
 public class PdfReportHelper {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PdfReportHelper.class);
+
     /**
      * 渲染生成检验报告 PDF 文件
      */
@@ -233,7 +235,9 @@ public class PdfReportHelper {
                             float y = position.getBottom() + (position.getHeight() - signature.getScaledHeight()) / 2;
                             signature.setAbsolutePosition(x, y);
                             canvas.addImage(signature);
-                        } catch (Exception e) {}
+                        } catch (Exception e) {
+                            log.warn("渲染电子签章失败", e);
+                        }
                     }
                 });
             }
@@ -241,7 +245,7 @@ public class PdfReportHelper {
             signTable.addCell(textCell);
             document.add(signTable);
         } catch (Exception e) {
-            System.out.println("加载电子签章失败: " + e.getMessage());
+            log.warn("加载电子签章失败: {}", e.getMessage());
         }
 
         Paragraph disclaimer = new Paragraph("声明：本报告为演示文件，不具备法律效力。", new Font(bfChinese, 10, Font.NORMAL));

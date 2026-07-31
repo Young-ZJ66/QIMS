@@ -10,11 +10,12 @@
         <result column="address" property="address" />
         <result column="login_account" property="loginAccount" />
         <result column="login_password" property="loginPassword" />
+        <result column="status" property="status" />
         <result column="create_time" property="createTime" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, company_name, contact_person, phone, address, login_account, login_password, create_time
+        id, company_name, contact_person, phone, address, login_account, login_password, status, create_time
     </sql>
 
     <select id="selectById" resultMap="BaseResultMap">
@@ -28,11 +29,19 @@
         FROM sys_client
     </select>
 
+    <!-- 按登录账号精确查询 -->
+    <select id="selectByLoginAccount" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM sys_client
+        WHERE login_account = #{loginAccount}
+        LIMIT 1
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sys_client (
-            company_name, contact_person, phone, address, login_account, login_password, create_time
+            company_name, contact_person, phone, address, login_account, login_password, status, create_time
         ) VALUES (
-            #{companyName}, #{contactPerson}, #{phone}, #{address}, #{loginAccount}, #{loginPassword}, #{createTime}
+            #{companyName}, #{contactPerson}, #{phone}, #{address}, #{loginAccount}, #{loginPassword}, #{status}, #{createTime}
         )
     </insert>
 
@@ -45,6 +54,7 @@
             <if test="address != null"> address = #{address}, </if>
             <if test="loginAccount != null"> login_account = #{loginAccount}, </if>
             <if test="loginPassword != null"> login_password = #{loginPassword}, </if>
+            <if test="status != null"> status = #{status}, </if>
             <if test="createTime != null"> create_time = #{createTime}, </if>
         </set>
         WHERE id = #{id}

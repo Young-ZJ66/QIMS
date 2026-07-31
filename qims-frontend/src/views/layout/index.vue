@@ -161,15 +161,16 @@
 import { computed, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import request from '@/utils/request'
+import request, { getRoleFromToken } from '@/utils/request'
 
 const router = useRouter()
 const currentUsername = ref(localStorage.getItem('username') || '用户')
-const roleId = ref(localStorage.getItem('roleId'))
+// 从 JWT Token 解析角色
+const roleId = ref(getRoleFromToken())
 
-const isAdmin = computed(() => roleId.value === '1')
-const isInspector = computed(() => roleId.value === '2')
-const isClient = computed(() => roleId.value === '3')
+const isAdmin = computed(() => String(roleId.value) === '1')
+const isInspector = computed(() => String(roleId.value) === '2')
+const isClient = computed(() => String(roleId.value) === '3')
 
 const handleCommand = (command) => {
   if (command === 'logout') {

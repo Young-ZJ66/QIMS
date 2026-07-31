@@ -3,7 +3,7 @@ package com.young.service.impl;
 import com.young.pojo.SysUser;
 import com.young.mapper.SysUserMapper;
 import com.young.service.SysUserService;
-import com.young.utils.MD5Utils;
+import com.young.utils.PasswordUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
@@ -16,8 +16,9 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public int add(SysUser record) {
+        // 新增用户时使用 BCrypt 加密密码
         if (record.getPassword() != null && !record.getPassword().isEmpty()) {
-            record.setPassword(MD5Utils.encrypt(record.getPassword()));
+            record.setPassword(PasswordUtils.hash(record.getPassword()));
         }
         return mapper.insert(record);
     }
@@ -25,9 +26,9 @@ public class SysUserServiceImpl implements SysUserService {
     @Override
     public int update(SysUser record) {
         if (record.getPassword() != null && !record.getPassword().isEmpty()) {
-            // 粗略判断：如果长度不等于32，说明是明文，需要MD5加密
-            if (record.getPassword().length() != 32) {
-                record.setPassword(MD5Utils.encrypt(record.getPassword()));
+            // 如果不是 BCrypt 格式，说明是明文，需要加密
+            if (!record.getPassword().startsWith("$2")) {
+                record.setPassword(PasswordUtils.hash(record.getPassword()));
             }
         } else {
             record.setPassword(null); // 为空则不更新密码

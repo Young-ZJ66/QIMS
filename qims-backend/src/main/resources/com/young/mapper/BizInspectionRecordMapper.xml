@@ -29,6 +29,16 @@
         FROM biz_inspection_record
     </select>
 
+    <!-- 按任务ID批量查询检测记录 -->
+    <select id="selectByTaskIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_inspection_record
+        WHERE task_id IN
+        <foreach item="taskId" collection="taskIds" open="(" separator="," close=")">
+            #{taskId}
+        </foreach>
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO biz_inspection_record (
             task_id, item_id, measured_value, measured_text, photo_url, result, attachment_url, inspect_time

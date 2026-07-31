@@ -4,14 +4,15 @@ USE `qims_db`;
 -- ----------------------------
 -- 质量检测系统 核心数据库表设计
 -- 数据库类型：MySQL 8.0+
--- 框架：Spring Boot + MyBatis-Plus
+-- 框架：Spring Boot + MyBatis (原生)
+-- 密码策略：BCrypt
 -- ----------------------------
 
 -- 1. 系统账号表
 CREATE TABLE `sys_user` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `username` varchar(50) NOT NULL COMMENT '登录账号',
-  `password` varchar(100) NOT NULL COMMENT '密码',
+  `password` varchar(100) NOT NULL COMMENT '密码(BCrypt)',
   `real_name` varchar(50) DEFAULT NULL COMMENT '真实姓名',
   `role_id` int NOT NULL COMMENT '角色ID (1-管理员 2-检测员)',
   `phone` varchar(20) DEFAULT NULL COMMENT '联系电话',
@@ -29,7 +30,8 @@ CREATE TABLE `sys_client` (
   `phone` varchar(20) DEFAULT NULL COMMENT '联系电话',
   `address` varchar(200) DEFAULT NULL COMMENT '企业地址',
   `login_account` varchar(50) NOT NULL COMMENT '登录账号',
-  `login_password` varchar(64) NOT NULL COMMENT '登录密码(MD5)',
+  `login_password` varchar(100) NOT NULL COMMENT '登录密码(BCrypt)',
+  `status` tinyint(1) DEFAULT '1' COMMENT '状态：1正常，0禁用',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_client_account` (`login_account`)
@@ -140,16 +142,16 @@ CREATE TABLE `biz_report` (
 
 -- 系统数据
 
--- 1. 初始账号 (密码统一为 123456，其 MD5 值为: e10adc3949ba59abbe56e057f20f883e)
+-- 1. 初始账号 (密码统一为 123456，BCrypt 哈希)
 INSERT INTO `sys_user` (`username`, `password`, `real_name`, `role_id`, `phone`, `status`) VALUES
-('admin', 'e10adc3949ba59abbe56e057f20f883e', '王建国', 1, '13800000000', 1),
-('inspector', 'e10adc3949ba59abbe56e057f20f883e', '张三', 2, '13900000000', 1);
+('admin', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', '王建国', 1, '13800000000', 1),
+('inspector', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', '张三', 2, '13900000000', 1);
 
--- 2. 初始客户
-INSERT INTO `sys_client` (`company_name`, `contact_person`, `phone`, `address`, `login_account`, `login_password`) VALUES
-('绿源生鲜食品有限公司', '张三', '13700000001', '工业园区1号', 'client1', 'e10adc3949ba59abbe56e057f20f883e'),
-('香满园肉制品有限公司', '李四', '13700000002', '科技园区A栋', 'client2', 'e10adc3949ba59abbe56e057f20f883e'),
-('伊康乳业集团有限公司', '陈浩', '13700000003', '高新环保园区3号', 'client3', 'e10adc3949ba59abbe56e057f20f883e');
+-- 2. 初始客户 (含 status 字段)
+INSERT INTO `sys_client` (`company_name`, `contact_person`, `phone`, `address`, `login_account`, `login_password`, `status`) VALUES
+('绿源生鲜食品有限公司', '张三', '13700000001', '工业园区1号', 'client1', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', 1),
+('香满园肉制品有限公司', '李四', '13700000002', '科技园区A栋', 'client2', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', 1),
+('伊康乳业集团有限公司', '陈浩', '13700000003', '高新环保园区3号', 'client3', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', 1);
 
 -- 3. 初始标准及项目
 INSERT INTO `std_standard` (`id`, `standard_code`, `standard_name`, `standard_category`, `product_category`, `status`) VALUES

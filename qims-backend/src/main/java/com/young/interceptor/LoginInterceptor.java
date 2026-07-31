@@ -5,6 +5,9 @@ import com.young.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,6 +20,11 @@ import java.io.PrintWriter;
 @Component
 public class LoginInterceptor implements HandlerInterceptor {
 
+    private static final Logger log = LoggerFactory.getLogger(LoginInterceptor.class);
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 放行 OPTIONS 预检请求
@@ -25,21 +33,27 @@ public class LoginInterceptor implements HandlerInterceptor {
         }
 
         String token = request.getHeader("Authorization");
-        
+
         // 尝试从请求头中获取 Token
         if (token != null && token.startsWith("Bearer ")) {
             token = token.substring(7);
             try {
                 // 验证 Token 是否合法
-                Claims claims = JwtUtils.parseToken(token);
-                // 可以将用户信息放入 request 域，供后续 Controller 使用
+                Claims claims = jwtUtils.parseToken(token);
+                // 将用户信息放入 request 域，供后续 Controller 使用
                 request.setAttribute("userId", claims.get("userId"));
                 request.setAttribute("username", claims.get("username"));
                 request.setAttribute("roleId", claims.get("roleId"));
                 request.setAttribute("clientId", claims.get("clientId"));
+
+                // 如果 Token 即将过期，在响应头中标记，前端可据此静默刷新
+                if (jwtUtils.isTokenExpiringSoon(token)) {
+                    response.setHeader("X-Token-Expiring-Soon", "true");
+                }
+
                 return true;
             } catch (Exception e) {
-                // Token 过期或非法
+                log.debug("Token 验证失败: {}", e.getMessage());
             }
         }
 

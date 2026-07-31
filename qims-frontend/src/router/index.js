@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getRoleFromToken } from '@/utils/request'
 
 const routes = [
   {
@@ -79,21 +80,22 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const roleId = localStorage.getItem('roleId') // 1-管理员 2-检测员 3-客户
+  // 从 JWT Token 中解析角色
+  const roleId = getRoleFromToken()
 
   if (to.path !== '/login' && !token) {
     // 强制跳转登录页
     ElMessage.warning('请先登录系统')
     next('/login')
   } else {
-    // 角色鉴权
-    if (to.path.startsWith('/admin') && roleId != '1') {
+    // 角色鉴权（基于 JWT Token 中的 roleId，不可被前端篡改）
+    if (to.path.startsWith('/admin') && roleId != 1) {
       ElMessage.error('无权限访问管理员模块')
       next('/dashboard')
-    } else if (to.path.startsWith('/inspector') && roleId != '2') {
+    } else if (to.path.startsWith('/inspector') && roleId != 2) {
       ElMessage.error('无权限访问实验室模块')
       next('/dashboard')
-    } else if (to.path.startsWith('/client') && roleId != '3') {
+    } else if (to.path.startsWith('/client') && roleId != 3) {
       ElMessage.error('无权限访问客户模块')
       next('/dashboard')
     } else {

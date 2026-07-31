@@ -14,24 +14,21 @@ import com.young.pojo.StdInspectionItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.young.mapper.SysOperateLogMapper;
 import com.young.pojo.SysOperateLog;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.RequestMapping;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * 首页大屏数据概览接口
  */
-@Api(tags = "大屏统计接口")
+@Tag(name = "数据看板")
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
@@ -54,11 +51,11 @@ public class DashboardController {
     @Autowired
     private SysOperateLogMapper operateLogMapper;
 
-    @ApiOperation("获取大屏统计数据")
+    @Operation(summary = "获取首页大屏统计数据")
     @GetMapping("/stats")
     public Result<Map<String, Object>> getDashboardStats(jakarta.servlet.http.HttpServletRequest request) {
         Map<String, Object> stats = new HashMap<>();
-        
+
         Object roleIdObj = request.getAttribute("roleId");
         String roleIdStr = roleIdObj != null ? String.valueOf(roleIdObj) : "";
         Long userId = null;
@@ -92,7 +89,7 @@ public class DashboardController {
             allReports = allReports.stream().filter(r -> myDelegationIds.contains(r.getDelegationId())).collect(Collectors.toList());
             allRecords = allRecords.stream().filter(r -> myTaskIds.contains(r.getTaskId())).collect(Collectors.toList());
         }
-        
+
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
 
@@ -103,14 +100,14 @@ public class DashboardController {
         long yesterdayDelegations = allDelegations.stream()
                 .filter(d -> d.getSubmitTime() != null && d.getSubmitTime().toLocalDate().equals(yesterday))
                 .count();
-        
+
         // 较昨日计算
         String delegationGrowthStr = "0.0";
         if (yesterdayDelegations == 0) {
             if (todayDelegations > 0) {
-                delegationGrowthStr = "new"; // 昨日为0，今日大于0，代表纯新增
+                delegationGrowthStr = "new";
             } else {
-                delegationGrowthStr = "0.0"; // 昨日今日都是0
+                delegationGrowthStr = "0.0";
             }
         } else {
             double growth = (double)(todayDelegations - yesterdayDelegations) / yesterdayDelegations * 100;
@@ -125,10 +122,10 @@ public class DashboardController {
                 .count();
         stats.put("pendingTasks", pendingTasks);
 
-        // 3. 当月已签发报告（质检员为当月已完成任务）
+        // 3. 当月已签发报告
         if ("2".equals(roleIdStr)) {
             long monthTasks = allTasks.stream()
-                .filter(t -> t.getStatus() != null && t.getStatus() == 1) // 质检员已完成的任务
+                .filter(t -> t.getStatus() != null && t.getStatus() == 1)
                 .count();
             stats.put("monthReports", monthTasks);
             stats.put("isInspector", true);
@@ -141,18 +138,16 @@ public class DashboardController {
             stats.put("monthReports", monthReports);
             stats.put("isInspector", false);
         }
-        
-        // 总体任务/报告完成率（简易计算：已完成/总数）
-        long completedCount = "2".equals(roleIdStr) ? 
-            allTasks.stream().filter(t -> t.getStatus() != null && t.getStatus() == 1).count() : 
+
+        // 总体任务/报告完成率
+        long completedCount = "2".equals(roleIdStr) ?
+            allTasks.stream().filter(t -> t.getStatus() != null && t.getStatus() == 1).count() :
             allReports.size();
         long totalCount = "2".equals(roleIdStr) ? allTasks.size() : allDelegations.size();
         double completionRate = totalCount == 0 ? 0.0 : (double) completedCount / totalCount * 100;
         stats.put("completionRate", String.format("%.1f", completionRate));
 
         // 4. 总体合格率
-        // 质检员的合格率：根据自己做过的单项检测记录（BizInspectionRecord）的合格数量 / 总记录数计算
-        // 客户和管理员的合格率：根据最终签发的报告（BizReport）的合格数量 / 总报告数计算
         double passRate = 0.0;
         if ("2".equals(roleIdStr)) {
             if (!allRecords.isEmpty()) {
@@ -166,8 +161,6 @@ public class DashboardController {
             }
         }
         stats.put("passRate", String.format("%.1f", passRate));
-        
-        // 较上月合格率数据预留
         stats.put("passRateGrowth", "0.0");
 
         // 5. 组装 ECharts 数据：近7日检测委托趋势
@@ -186,13 +179,24 @@ public class DashboardController {
 
         // 6. 组装 ECharts 数据：不良品缺陷分类分析
         List<Map<String, Object>> defectData = new ArrayList<>();
-        
+
+        // 收集所有不合格记录的 itemId，批量查询
+        Set<Long> failedItemIds = allRecords.stream()
+                .filter(r -> r.getResult() != null && r.getResult() == 0)
+                .map(BizInspectionRecord::getItemId)
+                .collect(Collectors.toSet());
+
+        Map<Long, StdInspectionItem> itemMap = Collections.emptyMap();
+        if (!failedItemIds.isEmpty()) {
+            List<StdInspectionItem> items = itemMapper.selectByIds(new ArrayList<>(failedItemIds));
+            itemMap = items.stream().collect(Collectors.toMap(StdInspectionItem::getId, Function.identity()));
+        }
+
         Map<String, Integer> defectCountMap = new HashMap<>();
         for (BizInspectionRecord r : allRecords) {
-            if (r.getResult() != null && r.getResult() == 0) { // 不合格
-                // 获取对应的检测项目名称
+            if (r.getResult() != null && r.getResult() == 0) {
                 String itemName = "未知项目异常";
-                StdInspectionItem item = itemMapper.selectById(r.getItemId());
+                StdInspectionItem item = itemMap.get(r.getItemId());
                 if (item != null && item.getItemName() != null) {
                     itemName = item.getItemName() + "异常";
                 }
@@ -200,7 +204,6 @@ public class DashboardController {
             }
         }
 
-        // 如果没有任何缺陷记录，提供一个默认展示，避免图表空白
         if (defectCountMap.isEmpty()) {
             Map<String, Object> d1 = new HashMap<>(); d1.put("name", "无不合格项"); d1.put("value", 1);
             defectData.add(d1);
@@ -212,26 +215,25 @@ public class DashboardController {
                 defectData.add(d);
             }
         }
-        
+
         stats.put("defectData", defectData);
 
         // 7. 最新系统动态日志
         List<Map<String, Object>> dynamicLogs = new ArrayList<>();
-        
+
         List<Long> allowedDelegationIds = null;
-        if ("3".equals(roleIdStr)) { // 客户只看自己的委托单动态
+        if ("3".equals(roleIdStr)) {
             allowedDelegationIds = allDelegations.stream().map(BizDelegation::getId).collect(Collectors.toList());
             if (allowedDelegationIds.isEmpty()) {
-                allowedDelegationIds.add(-1L); // 确保不会查询出别人的数据
+                allowedDelegationIds.add(-1L);
             }
-        } else if ("2".equals(roleIdStr)) { // 质检员只看自己相关的盲样任务对应的委托单动态
+        } else if ("2".equals(roleIdStr)) {
             allowedDelegationIds = allTasks.stream().map(BizSampleTask::getDelegationId).collect(Collectors.toList());
             if (allowedDelegationIds.isEmpty()) {
                 allowedDelegationIds.add(-1L);
             }
         }
-        // roleId = 1 (管理员) 看所有动态，allowedDelegationIds 保持 null
-        
+
         List<SysOperateLog> recentLogs = operateLogMapper.selectRecentLogs(6, allowedDelegationIds);
         for (SysOperateLog logRecord : recentLogs) {
             Map<String, Object> logMap = new HashMap<>();
@@ -242,7 +244,7 @@ public class DashboardController {
             logMap.put("operator", logRecord.getOperator());
             dynamicLogs.add(logMap);
         }
-        
+
         stats.put("dynamicLogs", dynamicLogs);
 
         return Result.success(stats);

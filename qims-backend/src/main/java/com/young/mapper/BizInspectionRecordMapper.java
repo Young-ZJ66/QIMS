@@ -11,4 +11,6 @@ public interface BizInspectionRecordMapper {
     int deleteById(Long id);
     BizInspectionRecord selectById(Long id);
     List<BizInspectionRecord> selectAll();
+    /** 按任务ID批量查询检测记录 */
+    List<BizInspectionRecord> selectByTaskIds(@org.apache.ibatis.annotations.Param("taskIds") List<Long> taskIds);
 }

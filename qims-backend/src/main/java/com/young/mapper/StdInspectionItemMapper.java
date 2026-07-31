@@ -11,4 +11,8 @@ public interface StdInspectionItemMapper {
     int deleteById(Long id);
     StdInspectionItem selectById(Long id);
     List<StdInspectionItem> selectAll();
+    /** 按标准ID查询检测项目 */
+    List<StdInspectionItem> selectByStandardId(@org.apache.ibatis.annotations.Param("standardId") Long standardId);
+    /** 批量查询 */
+    List<StdInspectionItem> selectByIds(@org.apache.ibatis.annotations.Param("ids") List<Long> ids);
 }

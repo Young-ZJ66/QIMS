@@ -134,7 +134,6 @@ const handleLogin = () => {
         ElMessage.success(`欢迎回来, ${res.realName || res.username}`)
         router.push('/')
       }).catch(() => {
-        // 错误提示已由 request 拦截器统一处理
       }).finally(() => {
         loading.value = false
       })

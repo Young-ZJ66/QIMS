@@ -27,6 +27,16 @@
         FROM biz_report
     </select>
 
+    <!-- 按委托单ID批量查询报告 -->
+    <select id="selectByDelegationIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_report
+        WHERE delegation_id IN
+        <foreach item="delegationId" collection="delegationIds" open="(" separator="," close=")">
+            #{delegationId}
+        </foreach>
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO biz_report (
             report_no, delegation_id, reviewer_id, final_conclusion, report_file_url, issue_time

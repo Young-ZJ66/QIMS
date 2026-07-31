@@ -3,11 +3,13 @@ package com.young.controller;
 import com.young.pojo.BizDelegation;
 import com.young.service.BizDelegationService;
 import com.young.common.Result;
+import com.young.annotation.RequireRole;
+import com.young.pojo.enums.UserRole;
 import com.young.pojo.SysClient;
 import com.young.mapper.SysClientMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -15,7 +17,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Api(tags = "检验委托接口")
+/**
+ * 检验委托接口
+ */
+@Tag(name = "检验委托")
 @RestController
 @RequestMapping("/api/biz-delegation")
 public class BizDelegationController {
@@ -29,15 +34,11 @@ public class BizDelegationController {
     /**
      * 1. 客户提交委托单
      */
-    @ApiOperation("提交委托单")
+    @Operation(summary = "客户提交委托单")
+    @RequireRole(UserRole.CLIENT)
     @PostMapping("/submit")
     public Result<String> submitDelegation(@RequestBody BizDelegation delegation, HttpServletRequest request) {
         try {
-            Object roleIdObj = request.getAttribute("roleId");
-            if (roleIdObj == null || !String.valueOf(roleIdObj).equals("3")) {
-                return Result.error("无权限：只有送检客户可以提交委托单");
-            }
-            
             Object clientIdObj = request.getAttribute("userId");
             if (clientIdObj != null) {
                 delegation.setClientId(Long.valueOf(String.valueOf(clientIdObj)));
@@ -53,18 +54,14 @@ public class BizDelegationController {
     /**
      * 2. 管理员收样，生成盲样任务
      */
-    @ApiOperation("收样并分发任务")
+    @Operation(summary = "管理员收样并分配质检员")
+    @RequireRole(UserRole.ADMIN)
     @PostMapping("/receive")
     public Result<String> receiveSampleAndAssign(
-            @RequestParam Long delegationId, 
-            @RequestParam Long inspectorId, 
+            @RequestParam Long delegationId,
+            @RequestParam Long inspectorId,
             HttpServletRequest request) {
         try {
-            Object roleIdObj = request.getAttribute("roleId");
-            if (roleIdObj == null || !String.valueOf(roleIdObj).equals("1")) {
-                return Result.error("无权限：只有管理员可以收样并分发");
-            }
-            
             Long receiverId = 1L;
             Object userIdObj = request.getAttribute("userId");
             if (userIdObj != null) {
@@ -80,38 +77,43 @@ public class BizDelegationController {
 
     // 基础 CRUD
 
-    @ApiOperation("新增")
+    @Operation(summary = "新增委托单")
+    @RequireRole(UserRole.ADMIN)
     @PostMapping
     public Result<Void> add(@RequestBody BizDelegation record) {
         service.add(record);
         return Result.success();
     }
 
-    @ApiOperation("修改")
+    @Operation(summary = "修改委托单")
+    @RequireRole(UserRole.ADMIN)
     @PutMapping
     public Result<Void> update(@RequestBody BizDelegation record) {
         service.update(record);
         return Result.success();
     }
 
-    @ApiOperation("删除")
+    @Operation(summary = "删除委托单")
+    @RequireRole(UserRole.ADMIN)
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return Result.success();
     }
 
-    @ApiOperation("根据ID查询")
+    @Operation(summary = "根据ID查询委托单")
     @GetMapping("/{id}")
     public Result<BizDelegation> getById(@PathVariable Long id) {
         return Result.success(service.getById(id));
     }
 
-    @ApiOperation("查询所有")
+    @Operation(summary = "查询委托单列表")
     @GetMapping
     public Result<List<BizDelegation>> getAll(HttpServletRequest request) {
         List<BizDelegation> delegations;
         Object roleIdObj = request.getAttribute("roleId");
+
+        // 客户只能看到自己的委托单
         if (roleIdObj != null && "3".equals(String.valueOf(roleIdObj))) {
             Object clientIdObj = request.getAttribute("userId");
             if (clientIdObj == null) {
@@ -124,7 +126,7 @@ public class BizDelegationController {
             delegations = service.getAll();
         }
 
-        // 填充客户名称
+        // 批量填充客户名称
         if (delegations != null && !delegations.isEmpty()) {
             List<SysClient> clients = clientMapper.selectAll();
             Map<Long, String> clientMap = clients.stream().collect(

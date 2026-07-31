@@ -16,16 +16,22 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.young.mapper.SysOperateLogMapper;
 import com.young.pojo.SysOperateLog;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 
-@Api(tags = "检验记录接口")
+/**
+ * 检验记录接口
+ */
+@Tag(name = "检验记录")
 @RestController
 @RequestMapping("/api/biz-inspection-record")
 public class BizInspectionRecordController {
@@ -46,31 +52,36 @@ public class BizInspectionRecordController {
     private SysOperateLogMapper logMapper;
 
     /**
-     * 根据委托单 ID 查询其下的所有盲样检测记录（用于管理员出报告前查看）
+     * 根据委托单 ID 查询其下的所有盲样检测记录
      */
-    @ApiOperation("根据委托单查询检验记录")
+    @Operation(summary = "根据委托单ID查询检测记录")
     @GetMapping("/delegation/{delegationId}")
     public Result<List<BizInspectionRecord>> getByDelegationId(@PathVariable Long delegationId) {
-        // 查询委托单对应的所有盲样任务
-        List<BizSampleTask> tasks = taskMapper.selectAll().stream()
-                .filter(t -> delegationId.equals(t.getDelegationId()))
-                .collect(Collectors.toList());
+        List<BizSampleTask> tasks = taskMapper.selectByDelegationId(delegationId);
 
         if (tasks.isEmpty()) {
             return Result.success(Collections.emptyList());
         }
 
-        // 收集所有这些任务的 record
+        // 批量查询检测记录
         List<Long> taskIds = tasks.stream().map(BizSampleTask::getId).collect(Collectors.toList());
         List<BizInspectionRecord> records = service.getAll().stream()
                 .filter(r -> taskIds.contains(r.getTaskId()))
                 .collect(Collectors.toList());
 
-        java.util.Map<Long, String> taskCodeMap = tasks.stream()
+        // 批量查询检测项目
+        Set<Long> itemIds = records.stream().map(BizInspectionRecord::getItemId).collect(Collectors.toSet());
+        Map<Long, StdInspectionItem> itemMap = Collections.emptyMap();
+        if (!itemIds.isEmpty()) {
+            List<StdInspectionItem> items = itemMapper.selectByIds(new java.util.ArrayList<>(itemIds));
+            itemMap = items.stream().collect(Collectors.toMap(StdInspectionItem::getId, Function.identity()));
+        }
+
+        Map<Long, String> taskCodeMap = tasks.stream()
                 .collect(Collectors.toMap(BizSampleTask::getId, BizSampleTask::getBlindSampleCode));
 
         for (BizInspectionRecord r : records) {
-            StdInspectionItem item = itemMapper.selectById(r.getItemId());
+            StdInspectionItem item = itemMap.get(r.getItemId());
             if (item != null) {
                 r.setItemName(item.getItemName());
             }
@@ -83,14 +94,14 @@ public class BizInspectionRecordController {
     /**
      * 3. 检测员批量录入实测数据，系统自动进行合格判定
      */
-    @ApiOperation("批量提交检测数据")
+    @Operation(summary = "检测员批量录入实测数据")
     @PostMapping("/submit-batch-data")
     public Result<Void> submitBatchInspectionData(@RequestBody List<BizInspectionRecord> records, HttpServletRequest request) {
         try {
             if (records == null || records.isEmpty()) {
                 return Result.error("未提交任何检测数据");
             }
-            
+
             Long taskId = records.get(0).getTaskId();
             BizSampleTask task = taskMapper.selectById(taskId);
             if (task == null) {
@@ -106,12 +117,12 @@ public class BizInspectionRecordController {
             if (task.getStatus() != null && task.getStatus() == TaskStatus.COMPLETED.getCode()) {
                 return Result.error("该任务已检测完成，不能重复提交数据");
             }
-            
+
             // 逐条判定并保存
             for (BizInspectionRecord record : records) {
                 service.submitInspectionData(record);
             }
-            
+
             // 更新盲样任务状态为已完成 (1)
             task.setStatus(TaskStatus.COMPLETED.getCode());
             task.setFinishTime(LocalDateTime.now());
@@ -130,16 +141,14 @@ public class BizInspectionRecordController {
             // 联动更新委托单状态为 2 (审核中)
             BizDelegation delegation = delegationMapper.selectById(task.getDelegationId());
             if (delegation != null && delegation.getStatus() != null && delegation.getStatus() == DelegationStatus.IN_PROGRESS.getCode()) {
-                List<BizSampleTask> allTasks = taskMapper.selectAll().stream()
-                        .filter(t -> task.getDelegationId().equals(t.getDelegationId()))
-                        .collect(Collectors.toList());
+                List<BizSampleTask> allTasks = taskMapper.selectByDelegationId(task.getDelegationId());
                 boolean allDone = allTasks.stream().allMatch(t -> t.getStatus() != null && t.getStatus() == TaskStatus.COMPLETED.getCode());
                 if (allDone) {
                     delegation.setStatus(DelegationStatus.UNDER_REVIEW.getCode());
                     delegationMapper.update(delegation);
                 }
             }
-            
+
             return Result.success();
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -148,34 +157,34 @@ public class BizInspectionRecordController {
 
     // 基础 CRUD
 
-    @ApiOperation("新增")
+    @Operation(summary = "新增检验记录")
     @PostMapping
     public Result<Void> add(@RequestBody BizInspectionRecord record) {
         service.add(record);
         return Result.success();
     }
 
-    @ApiOperation("修改")
+    @Operation(summary = "修改检验记录")
     @PutMapping
     public Result<Void> update(@RequestBody BizInspectionRecord record) {
         service.update(record);
         return Result.success();
     }
 
-    @ApiOperation("删除")
+    @Operation(summary = "删除检验记录")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return Result.success();
     }
 
-    @ApiOperation("根据ID查询")
+    @Operation(summary = "根据ID查询检验记录")
     @GetMapping("/{id}")
     public Result<BizInspectionRecord> getById(@PathVariable Long id) {
         return Result.success(service.getById(id));
     }
 
-    @ApiOperation("查询所有")
+    @Operation(summary = "查询所有检验记录")
     @GetMapping
     public Result<List<BizInspectionRecord>> getAll() {
         return Result.success(service.getAll());

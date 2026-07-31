@@ -2,6 +2,7 @@ package com.young.config;
 
 import com.young.interceptor.LoginInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -17,16 +18,25 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Autowired
     private LoginInterceptor loginInterceptor;
 
+    /** 从配置文件读取允许的 CORS 来源 */
+    @Value("${qims.cors.allowed-origins}")
+    private String[] allowedOrigins;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 注册登录拦截器，拦截所有 API，排除 /api/auth/** 和 /api/uploads/** (资源访问)
+        // 注册登录拦截器，拦截所有 API，排除认证、资源访问和 API 文档路径
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
-                    "/api/auth/login", 
-                    "/api/auth/client-login", 
-                    "/api/auth/register", 
-                    "/api/uploads/**"
+                    "/api/auth/login",
+                    "/api/auth/client-login",
+                    "/api/auth/register",
+                    "/api/uploads/**",
+                    "/doc.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/webjars/**",
+                    "/favicon.ico"
                 );
     }
 
@@ -41,7 +51,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("*") // 允许任何来源
+                // 限定允许的来源
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true) // 允许携带 Cookie

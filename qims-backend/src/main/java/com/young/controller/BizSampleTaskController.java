@@ -9,14 +9,16 @@ import com.young.mapper.BizSampleTaskMapper;
 import com.young.mapper.StdInspectionItemMapper;
 import com.young.common.Result;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-@Api(tags = "盲样任务接口")
+import java.util.List;
+
+/**
+ * 盲样任务接口
+ */
+@Tag(name = "盲样任务")
 @RestController
 @RequestMapping("/api/biz-sample-task")
 public class BizSampleTaskController {
@@ -36,7 +38,7 @@ public class BizSampleTaskController {
     /**
      * 动态获取该盲样任务对应需要检测的所有项目
      */
-    @ApiOperation("根据任务ID获取检测项目")
+    @Operation(summary = "获取盲样任务对应的检测项目")
     @GetMapping("/{id}/items")
     public Result<List<StdInspectionItem>> getItemsByTaskId(@PathVariable Long id) {
         BizSampleTask task = taskMapper.selectById(id);
@@ -47,61 +49,53 @@ public class BizSampleTaskController {
         if (delegation == null) {
             return Result.error("委托单不存在");
         }
-        
-        List<StdInspectionItem> allItems = itemMapper.selectAll();
-        List<StdInspectionItem> targetItems = allItems.stream()
-                .filter(item -> item.getStandardId().equals(delegation.getStandardId()))
-                .collect(Collectors.toList());
-                
+
+        List<StdInspectionItem> targetItems = itemMapper.selectByStandardId(delegation.getStandardId());
         return Result.success(targetItems);
     }
 
-    @ApiOperation("新增")
+    @Operation(summary = "新增盲样任务")
     @PostMapping
     public Result<Void> add(@RequestBody BizSampleTask record) {
         service.add(record);
         return Result.success();
     }
 
-    @ApiOperation("修改")
+    @Operation(summary = "修改盲样任务")
     @PutMapping
     public Result<Void> update(@RequestBody BizSampleTask record) {
         service.update(record);
         return Result.success();
     }
 
-    @ApiOperation("删除")
+    @Operation(summary = "删除盲样任务")
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return Result.success();
     }
 
-    @ApiOperation("根据ID查询")
+    @Operation(summary = "根据ID查询盲样任务")
     @GetMapping("/{id}")
     public Result<BizSampleTask> getById(@PathVariable Long id) {
         return Result.success(service.getById(id));
     }
 
-    @ApiOperation("查询所有")
+    @Operation(summary = "查询盲样任务列表")
     @GetMapping
     public Result<List<BizSampleTask>> getAll(jakarta.servlet.http.HttpServletRequest request) {
-        List<BizSampleTask> all = service.getAll();
-        
         Object roleIdObj = request.getAttribute("roleId");
-        
-        // 如果是质检员，只能看到分配给自己的任务
-        if (roleIdObj != null && String.valueOf(roleIdObj).equals("2")) {
+
+        // 质检员只能看到分配给自己的任务
+        if (roleIdObj != null && "2".equals(String.valueOf(roleIdObj))) {
             Object userIdObj = request.getAttribute("userId");
             if (userIdObj != null) {
                 Long inspectorId = Long.valueOf(String.valueOf(userIdObj));
-                List<BizSampleTask> inspectorTasks = all.stream()
-                        .filter(t -> inspectorId.equals(t.getInspectorId()))
-                        .collect(Collectors.toList());
+                List<BizSampleTask> inspectorTasks = taskMapper.selectByInspectorId(inspectorId);
                 return Result.success(inspectorTasks);
             }
         }
-        
-        return Result.success(all);
+
+        return Result.success(service.getAll());
     }
 }

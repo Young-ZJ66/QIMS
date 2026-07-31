@@ -22,6 +22,8 @@ import com.young.mapper.StdStandardMapper;
 import com.young.mapper.SysOperateLogMapper;
 import com.young.service.BizReportService;
 import com.young.utils.PdfReportHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class BizReportServiceImpl implements BizReportService {
+
+    private static final Logger log = LoggerFactory.getLogger(BizReportServiceImpl.class);
 
     @Autowired
     private BizReportMapper mapper;
@@ -70,25 +74,19 @@ public class BizReportServiceImpl implements BizReportService {
             throw new RuntimeException("关联的委托单不存在");
         }
 
-        // 获取该国标下规定的所有检测项目数量
-        List<StdInspectionItem> allItems = itemMapper.selectAll().stream()
-                .filter(item -> delegation.getStandardId().equals(item.getStandardId()))
-                .collect(Collectors.toList());
+        // 使用条件查询
+        List<StdInspectionItem> allItems = itemMapper.selectByStandardId(delegation.getStandardId());
 
-        // 获取该委托单对应的所有盲样任务
-        List<BizSampleTask> tasks = taskMapper.selectAll().stream()
-                .filter(t -> record.getDelegationId().equals(t.getDelegationId()))
-                .collect(Collectors.toList());
+        // 使用条件查询获取该委托单对应的所有盲样任务
+        List<BizSampleTask> tasks = taskMapper.selectByDelegationId(record.getDelegationId());
 
         if (tasks.isEmpty()) {
             throw new RuntimeException("该委托单尚未生成任何检测任务，无法签发报告");
         }
 
-        // 获取所有已录入的检测记录
+        // 批量查询所有已录入的检测记录
         List<Long> taskIds = tasks.stream().map(BizSampleTask::getId).collect(Collectors.toList());
-        List<BizInspectionRecord> inspectionRecords = recordMapper.selectAll().stream()
-                .filter(r -> taskIds.contains(r.getTaskId()))
-                .collect(Collectors.toList());
+        List<BizInspectionRecord> inspectionRecords = recordMapper.selectByTaskIds(taskIds);
 
         java.util.Set<Long> requiredItemIds = allItems.stream().map(StdInspectionItem::getId).collect(Collectors.toSet());
         java.util.Map<Long, java.util.Set<Long>> taskToItemIds = new java.util.HashMap<>();
@@ -147,8 +145,8 @@ public class BizReportServiceImpl implements BizReportService {
             record.setReportFileUrl("/uploads/reports/" + pdfFileName);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("生成 PDF 报告失败: " + e.getMessage());
+            log.error("生成 PDF 报告失败", e);
+            throw new RuntimeException("生成 PDF 报告失败");
         }
 
         // 保存报告记录
@@ -184,23 +182,18 @@ public class BizReportServiceImpl implements BizReportService {
     public int update(BizReport record) {
         // 更新数据库
         int res = mapper.update(record);
-        
+
         // 重新生成 PDF，覆盖旧文件
         try {
             BizReport existReport = mapper.selectById(record.getId());
             if (existReport == null) return res;
-            
+
             BizDelegation delegation = delegationMapper.selectById(existReport.getDelegationId());
-            List<StdInspectionItem> allItems = itemMapper.selectAll().stream()
-                    .filter(item -> delegation.getStandardId().equals(item.getStandardId()))
-                    .collect(Collectors.toList());
-            List<BizSampleTask> tasks = taskMapper.selectAll().stream()
-                    .filter(t -> existReport.getDelegationId().equals(t.getDelegationId()))
-                    .collect(Collectors.toList());
+            // 使用条件查询
+            List<StdInspectionItem> allItems = itemMapper.selectByStandardId(delegation.getStandardId());
+            List<BizSampleTask> tasks = taskMapper.selectByDelegationId(existReport.getDelegationId());
             List<Long> taskIds = tasks.stream().map(BizSampleTask::getId).collect(Collectors.toList());
-            List<BizInspectionRecord> inspectionRecords = recordMapper.selectAll().stream()
-                    .filter(r -> taskIds.contains(r.getTaskId()))
-                    .collect(Collectors.toList());
+            List<BizInspectionRecord> inspectionRecords = recordMapper.selectByTaskIds(taskIds);
 
             String uploadDir = System.getProperty("user.dir") + "/uploads/reports/";
             String pdfFileName = "Report_" + existReport.getReportNo() + ".pdf";
@@ -224,8 +217,8 @@ public class BizReportServiceImpl implements BizReportService {
             PdfReportHelper.generatePdf(pdfPath, existReport, delegation, standard, client, inspectorName, reviewerName, tasks, inspectionRecords, allItems);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("更新 PDF 报告失败: " + e.getMessage());
+            log.error("更新 PDF 报告失败", e);
+            throw new RuntimeException("更新 PDF 报告失败");
         }
 
         return res;

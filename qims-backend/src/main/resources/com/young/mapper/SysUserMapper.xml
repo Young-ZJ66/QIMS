@@ -28,6 +28,14 @@
         FROM sys_user
     </select>
 
+    <!-- 按用户名精确查询 -->
+    <select id="selectByUsername" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM sys_user
+        WHERE username = #{username}
+        LIMIT 1
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sys_user (
             username, password, real_name, role_id, phone, status, create_time
