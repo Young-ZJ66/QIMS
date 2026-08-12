@@ -3,6 +3,8 @@ package com.young.controller;
 import com.young.pojo.SysUser;
 import com.young.service.SysUserService;
 import com.young.common.Result;
+import com.young.annotation.RequireRole;
+import com.young.pojo.enums.UserRole;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,7 @@ public class SysUserController {
     private SysUserService service;
 
     @Operation(summary = "新增用户")
+    @RequireRole(UserRole.ADMIN)
     @PostMapping
     public Result<Void> add(@RequestBody SysUser record) {
         service.add(record);
@@ -32,6 +35,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "修改用户")
+    @RequireRole(UserRole.ADMIN)
     @PutMapping
     public Result<Void> update(@RequestBody SysUser record, jakarta.servlet.http.HttpServletRequest request) {
         Object currentUserIdObj = request.getAttribute("userId");
@@ -52,6 +56,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "删除用户")
+    @RequireRole(UserRole.ADMIN)
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
@@ -59,6 +64,7 @@ public class SysUserController {
     }
 
     @Operation(summary = "根据ID查询用户")
+    @RequireRole(UserRole.ADMIN)
     @GetMapping("/{id}")
     public Result<SysUser> getById(@PathVariable Long id) {
         return Result.success(service.getById(id));
@@ -75,6 +81,7 @@ public class SysUserController {
      * @param pageSize 每页条数，可选
      */
     @Operation(summary = "查询用户列表")
+    @RequireRole(UserRole.ADMIN)
     @GetMapping
     public Result<Object> getAll(
             @RequestParam(required = false) Integer page,

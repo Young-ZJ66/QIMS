@@ -3,16 +3,19 @@ package com.young.controller;
 import com.young.pojo.BizDelegation;
 import com.young.pojo.BizSampleTask;
 import com.young.pojo.StdInspectionItem;
+import com.young.pojo.enums.UserRole;
 import com.young.service.BizSampleTaskService;
 import com.young.mapper.BizDelegationMapper;
 import com.young.mapper.BizSampleTaskMapper;
 import com.young.mapper.StdInspectionItemMapper;
 import com.young.common.Result;
+import com.young.annotation.RequireRole;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -39,12 +42,23 @@ public class BizSampleTaskController {
      * 动态获取该盲样任务对应需要检测的所有项目
      */
     @Operation(summary = "获取盲样任务对应的检测项目")
+    @RequireRole({UserRole.ADMIN, UserRole.INSPECTOR})
     @GetMapping("/{id}/items")
-    public Result<List<StdInspectionItem>> getItemsByTaskId(@PathVariable Long id) {
+    public Result<List<StdInspectionItem>> getItemsByTaskId(@PathVariable Long id, HttpServletRequest request) {
         BizSampleTask task = taskMapper.selectById(id);
         if (task == null) {
             return Result.error("任务不存在");
         }
+
+        // 质检员只能查询分配给自己的任务
+        Object roleIdObj = request.getAttribute("roleId");
+        Object userIdObj = request.getAttribute("userId");
+        if (roleIdObj != null && String.valueOf(roleIdObj).equals(String.valueOf(UserRole.INSPECTOR.getCode()))) {
+            if (userIdObj == null || !task.getInspectorId().equals(Long.valueOf(String.valueOf(userIdObj)))) {
+                return Result.error("无权限：您不是该盲样任务的被指派质检员");
+            }
+        }
+
         BizDelegation delegation = delegationMapper.selectById(task.getDelegationId());
         if (delegation == null) {
             return Result.error("委托单不存在");
@@ -55,6 +69,7 @@ public class BizSampleTaskController {
     }
 
     @Operation(summary = "新增盲样任务")
+    @RequireRole(UserRole.ADMIN)
     @PostMapping
     public Result<Void> add(@RequestBody BizSampleTask record) {
         service.add(record);
@@ -62,6 +77,7 @@ public class BizSampleTaskController {
     }
 
     @Operation(summary = "修改盲样任务")
+    @RequireRole(UserRole.ADMIN)
     @PutMapping
     public Result<Void> update(@RequestBody BizSampleTask record) {
         service.update(record);
@@ -69,6 +85,7 @@ public class BizSampleTaskController {
     }
 
     @Operation(summary = "删除盲样任务")
+    @RequireRole(UserRole.ADMIN)
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
@@ -76,18 +93,35 @@ public class BizSampleTaskController {
     }
 
     @Operation(summary = "根据ID查询盲样任务")
+    @RequireRole({UserRole.ADMIN, UserRole.INSPECTOR})
     @GetMapping("/{id}")
-    public Result<BizSampleTask> getById(@PathVariable Long id) {
-        return Result.success(service.getById(id));
+    public Result<BizSampleTask> getById(@PathVariable Long id, HttpServletRequest request) {
+        BizSampleTask task = service.getById(id);
+        if (task == null) {
+            return Result.error("任务不存在");
+        }
+
+        // 质检员只能查询分配给自己的任务
+        Object roleIdObj = request.getAttribute("roleId");
+        Object userIdObj = request.getAttribute("userId");
+        if (roleIdObj != null && String.valueOf(roleIdObj).equals(String.valueOf(UserRole.INSPECTOR.getCode()))) {
+            if (userIdObj == null || task.getInspectorId() == null
+                    || !task.getInspectorId().equals(Long.valueOf(String.valueOf(userIdObj)))) {
+                return Result.error("无权限：您不是该盲样任务的被指派质检员");
+            }
+        }
+
+        return Result.success(task);
     }
 
     @Operation(summary = "查询盲样任务列表")
+    @RequireRole({UserRole.ADMIN, UserRole.INSPECTOR})
     @GetMapping
-    public Result<List<BizSampleTask>> getAll(jakarta.servlet.http.HttpServletRequest request) {
+    public Result<List<BizSampleTask>> getAll(HttpServletRequest request) {
         Object roleIdObj = request.getAttribute("roleId");
 
         // 质检员只能看到分配给自己的任务
-        if (roleIdObj != null && "2".equals(String.valueOf(roleIdObj))) {
+        if (roleIdObj != null && String.valueOf(roleIdObj).equals(String.valueOf(UserRole.INSPECTOR.getCode()))) {
             Object userIdObj = request.getAttribute("userId");
             if (userIdObj != null) {
                 Long inspectorId = Long.valueOf(String.valueOf(userIdObj));

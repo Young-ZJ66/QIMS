@@ -169,8 +169,10 @@ const fetchData = async () => {
 }
 
 const openReport = (url) => {
-  // vite 配置了代理，可以直接访问 /api 代理下的资源
-  window.open('/api' + url, '_blank')
+  if (!url) return
+  // 避免重复添加 /api 前缀（兼容历史数据中已带 /api 前缀的 URL）
+  const fullUrl = url.startsWith('/api/') ? url : '/api' + url
+  window.open(fullUrl, '_blank')
 }
 
 const openDetail = (row) => {

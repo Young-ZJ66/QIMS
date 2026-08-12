@@ -39,7 +39,7 @@ service.interceptors.response.use(
         duration: 5 * 1000
       })
 
-      // 401 表示 token 失效或未登录
+      // 401 表示 token 失效或未登录，跳转登录页
       if (res.code === 401) {
         localStorage.removeItem('token')
         localStorage.removeItem('roleId')
@@ -47,6 +47,7 @@ service.interceptors.response.use(
         localStorage.removeItem('username')
         router.push('/login')
       }
+      // 403 表示无权限访问，不跳登录页，仅提示
       return Promise.reject(new Error(res.message || 'Error'))
     } else {
       // 检查响应头中是否标记 Token 即将过期，如果是则静默刷新

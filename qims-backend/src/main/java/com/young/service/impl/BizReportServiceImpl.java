@@ -21,6 +21,7 @@ import com.young.mapper.SysClientMapper;
 import com.young.mapper.StdStandardMapper;
 import com.young.mapper.SysOperateLogMapper;
 import com.young.service.BizReportService;
+import com.young.config.UploadPathConfig;
 import com.young.utils.PdfReportHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,9 @@ public class BizReportServiceImpl implements BizReportService {
 
     @Autowired
     private BizDelegationMapper delegationMapper;
+
+    @Autowired
+    private UploadPathConfig uploadPathConfig;
 
     @Autowired
     private BizSampleTaskMapper taskMapper;
@@ -114,14 +118,14 @@ public class BizReportServiceImpl implements BizReportService {
 
         // 自动生成 PDF 报告文件
         try {
-            String uploadDir = System.getProperty("user.dir") + "/uploads/reports/";
+            String uploadDir = uploadPathConfig.getReportsDir();
             File dir = new File(uploadDir);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
             String pdfFileName = "Report_" + record.getReportNo() + ".pdf";
-            String pdfPath = uploadDir + pdfFileName;
+            String pdfPath = uploadDir + File.separator + pdfFileName;
 
             // 准备 PDF 需要的关联实体数据
             SysUser reviewer = record.getReviewerId() != null ? userMapper.selectById(record.getReviewerId()) : null;
@@ -195,9 +199,9 @@ public class BizReportServiceImpl implements BizReportService {
             List<Long> taskIds = tasks.stream().map(BizSampleTask::getId).collect(Collectors.toList());
             List<BizInspectionRecord> inspectionRecords = recordMapper.selectByTaskIds(taskIds);
 
-            String uploadDir = System.getProperty("user.dir") + "/uploads/reports/";
+            String uploadDir = uploadPathConfig.getReportsDir();
             String pdfFileName = "Report_" + existReport.getReportNo() + ".pdf";
-            String pdfPath = uploadDir + pdfFileName;
+            String pdfPath = uploadDir + File.separator + pdfFileName;
 
             SysUser reviewer = existReport.getReviewerId() != null ? userMapper.selectById(existReport.getReviewerId()) : null;
             String reviewerName = reviewer != null && reviewer.getRealName() != null ? reviewer.getRealName() : "/";

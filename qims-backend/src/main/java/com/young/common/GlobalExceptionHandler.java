@@ -22,6 +22,14 @@ public class GlobalExceptionHandler {
         return result;
     }
 
+    @ExceptionHandler(BusinessException.class)
+    public Result<String> handleBusinessException(BusinessException e) {
+        // 业务异常：使用异常中携带的 code 与 message 返回给前端
+        Result<String> result = Result.error(e.getMessage());
+        result.setCode(e.getCode());
+        return result;
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public Result<String> handleIllegalArgumentException(IllegalArgumentException e) {
         // 业务参数校验异常，可以安全地返回给前端

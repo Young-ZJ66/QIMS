@@ -123,7 +123,9 @@ CREATE TABLE `biz_inspection_record` (
   `attachment_url` varchar(255) DEFAULT NULL COMMENT '附件图片地址 (如仪器屏幕截图)',
   `inspect_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '检测时间',
   PRIMARY KEY (`id`),
-  KEY `idx_task_id` (`task_id`)
+  KEY `idx_task_id` (`task_id`),
+  KEY `idx_item_id` (`item_id`),
+  KEY `idx_result` (`result`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='实验室单项检测数据记录表';
 
 -- 9. 检测报告表 (审核员出具)
@@ -136,22 +138,24 @@ CREATE TABLE `biz_report` (
   `report_file_url` varchar(255) DEFAULT NULL COMMENT '生成的PDF报告文件存储路径',
   `issue_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '签发日期',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_report_no` (`report_no`)
+  UNIQUE KEY `uk_report_no` (`report_no`),
+  KEY `idx_delegation_id` (`delegation_id`),
+  KEY `idx_issue_time` (`issue_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='最终检验报告主表';
 
 
 -- 系统数据
 
--- 1. 初始账号 (密码统一为 123456，BCrypt 哈希)
+-- 1. 初始账号 (密码统一为 123456，每个用户使用独立的 BCrypt 盐值)
 INSERT INTO `sys_user` (`username`, `password`, `real_name`, `role_id`, `phone`, `status`) VALUES
-('admin', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', '王建国', 1, '13800000000', 1),
-('inspector', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', '张三', 2, '13900000000', 1);
+('admin', '$2a$10$Z9e4H/86mNn1CO3WF3TMR.5dEFvQGWvb2sORLX7Fg1G.pHaljYO0u', '王建国', 1, '13800000000', 1),
+('inspector', '$2a$10$bHXATrUA/GYeghGSnxM2muEXjAlTruq2m8Ufp431Y5y/dFywSQq52', '张三', 2, '13900000000', 1);
 
 -- 2. 初始客户 (含 status 字段)
 INSERT INTO `sys_client` (`company_name`, `contact_person`, `phone`, `address`, `login_account`, `login_password`, `status`) VALUES
-('绿源生鲜食品有限公司', '张三', '13700000001', '工业园区1号', 'client1', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', 1),
-('香满园肉制品有限公司', '李四', '13700000002', '科技园区A栋', 'client2', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', 1),
-('伊康乳业集团有限公司', '陈浩', '13700000003', '高新环保园区3号', 'client3', '$2a$10$k6rkMkwHAqpfg65jlhHPMOkYXDHxdpZeLijbQMstqPQu6UvJ1HUZ6', 1);
+('绿源生鲜食品有限公司', '张三', '13700000001', '工业园区1号', 'client1', '$2a$10$GfsTledLoRzDkOlJlAkyte2UaZR.3RS3mRUI4z4YgNfNvR3ewLe6q', 1),
+('香满园肉制品有限公司', '李四', '13700000002', '科技园区A栋', 'client2', '$2a$10$yRXmDH9M0Or6GJIy1/5tB.uo/odDX1VJIfgxPyOn3gQOxTL7Xkp8a', 1),
+('伊康乳业集团有限公司', '陈浩', '13700000003', '高新环保园区3号', 'client3', '$2a$10$QMgKppYGHEGMk7CyCmRMX.LsOXgmb5XqHWGeoCGfCfJqBNR5lgVaq', 1);
 
 -- 3. 初始标准及项目
 INSERT INTO `std_standard` (`id`, `standard_code`, `standard_name`, `standard_category`, `product_category`, `status`) VALUES

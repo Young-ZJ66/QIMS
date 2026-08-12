@@ -18,6 +18,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Autowired
     private LoginInterceptor loginInterceptor;
 
+    @Autowired
+    private UploadPathConfig uploadPathConfig;
+
     /** 从配置文件读取允许的 CORS 来源 */
     @Value("${qims.cors.allowed-origins}")
     private String[] allowedOrigins;
@@ -42,8 +45,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 映射静态资源路径到后端工程根目录下的 uploads 文件夹
-        String uploadDir = "file:" + System.getProperty("user.dir") + "/uploads/";
+        // 映射静态资源路径到 qims-backend/uploads 文件夹
+        String uploadDir = "file:" + uploadPathConfig.getUploadRootPath() + "/";
         registry.addResourceHandler("/api/uploads/**")
                 .addResourceLocations(uploadDir);
     }

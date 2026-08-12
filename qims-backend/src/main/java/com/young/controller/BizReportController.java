@@ -62,8 +62,28 @@ public class BizReportController {
 
     @Operation(summary = "根据ID查询报告")
     @GetMapping("/{id}")
-    public Result<BizReport> getById(@PathVariable Long id) {
-        return Result.success(service.getById(id));
+    public Result<BizReport> getById(@PathVariable Long id, HttpServletRequest request) {
+        BizReport report = service.getById(id);
+        if (report == null) {
+            return Result.error("报告不存在");
+        }
+
+        // 客户只能查询自己委托单对应的报告
+        Object roleIdObj = request.getAttribute("roleId");
+        if (roleIdObj != null && "3".equals(String.valueOf(roleIdObj))) {
+            Object clientIdObj = request.getAttribute("userId");
+            if (clientIdObj == null) {
+                Result<BizReport> error = Result.error("未获取到客户身份信息");
+                error.setCode(401);
+                return error;
+            }
+            BizDelegation delegation = bizDelegationMapper.selectById(report.getDelegationId());
+            if (delegation == null || !delegation.getClientId().equals(Long.valueOf(String.valueOf(clientIdObj)))) {
+                return Result.error("无权限：您只能查看自己委托单对应的报告");
+            }
+        }
+
+        return Result.success(report);
     }
 
     @Operation(summary = "查询报告列表")

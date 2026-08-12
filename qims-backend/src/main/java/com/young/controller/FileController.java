@@ -1,10 +1,12 @@
 package com.young.controller;
 
 import com.young.common.Result;
+import com.young.config.UploadPathConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,8 +27,8 @@ public class FileController {
 
     private static final Logger log = LoggerFactory.getLogger(FileController.class);
 
-    // 保存到当前项目根目录的 uploads 文件夹下
-    private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/uploads/";
+    @Autowired
+    private UploadPathConfig uploadPathConfig;
 
     /** 允许上传的文件扩展名白名单 */
     private static final Set<String> ALLOWED_EXTENSIONS = new HashSet<>(
@@ -63,7 +65,7 @@ public class FileController {
         }
 
         try {
-            File dir = new File(UPLOAD_DIR);
+            File dir = new File(uploadPathConfig.getUploadRootPath());
             if (!dir.exists()) {
                 dir.mkdirs();
             }

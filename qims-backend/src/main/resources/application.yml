@@ -24,7 +24,7 @@ mybatis:
   type-aliases-package: com.young.pojo
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 # PageHelper 分页插件配置
 pagehelper:

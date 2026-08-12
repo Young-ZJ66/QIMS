@@ -1,7 +1,7 @@
 package com.young.aspect;
 
 import com.young.annotation.RequireRole;
-import com.young.common.Result;
+import com.young.common.BusinessException;
 import com.young.pojo.enums.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
 /**
  * {@link RequireRole} 注解的 AOP 切面实现
  * <p>
- * 在方法执行前校验当前登录用户的角色是否在允许列表中，不匹配则直接返回 403。
+ * 在方法执行前校验当前登录用户的角色是否在允许列表中，不匹配则直接抛出 {@link BusinessException}，
+ * 由 {@link com.young.common.GlobalExceptionHandler} 统一返回 403。
  * </p>
  */
 @Aspect
@@ -37,14 +38,14 @@ public class RequireRoleAspect {
 
         // 未获取到角色信息
         if (roleIdObj == null) {
-            return writeForbidden("未登录或 Token 已过期", 401);
+            throw new BusinessException(401, "未登录或 Token 已过期");
         }
 
         int userRoleCode;
         try {
             userRoleCode = Integer.parseInt(String.valueOf(roleIdObj));
         } catch (NumberFormatException e) {
-            return writeForbidden("角色信息异常", 403);
+            throw new BusinessException(403, "角色信息异常");
         }
 
         // 检查用户角色是否在允许列表中
@@ -54,19 +55,10 @@ public class RequireRoleAspect {
 
         if (!allowedCodes.contains(userRoleCode)) {
             log.warn("用户角色 {} 尝试访问受限资源: {}", userRoleCode, joinPoint.getSignature().toShortString());
-            return writeForbidden("无权限访问该资源", 403);
+            throw new BusinessException(403, "无权限访问该资源");
         }
 
         // 权限校验通过，继续执行原方法
         return joinPoint.proceed();
-    }
-
-    /**
-     * 直接向响应写入错误信息
-     */
-    private Result<Void> writeForbidden(String message, int code) {
-        Result<Void> error = Result.error(message);
-        error.setCode(code);
-        return error;
     }
 }

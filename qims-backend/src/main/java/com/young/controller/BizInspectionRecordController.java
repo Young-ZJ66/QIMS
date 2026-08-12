@@ -12,6 +12,7 @@ import com.young.mapper.BizSampleTaskMapper;
 import com.young.mapper.BizDelegationMapper;
 import com.young.mapper.StdInspectionItemMapper;
 import com.young.common.Result;
+import com.young.annotation.RequireRole;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.young.mapper.SysOperateLogMapper;
@@ -55,6 +56,7 @@ public class BizInspectionRecordController {
      * 根据委托单 ID 查询其下的所有盲样检测记录
      */
     @Operation(summary = "根据委托单ID查询检测记录")
+    @RequireRole({UserRole.ADMIN, UserRole.INSPECTOR})
     @GetMapping("/delegation/{delegationId}")
     public Result<List<BizInspectionRecord>> getByDelegationId(@PathVariable Long delegationId) {
         List<BizSampleTask> tasks = taskMapper.selectByDelegationId(delegationId);
@@ -95,6 +97,7 @@ public class BizInspectionRecordController {
      * 3. 检测员批量录入实测数据，系统自动进行合格判定
      */
     @Operation(summary = "检测员批量录入实测数据")
+    @RequireRole(UserRole.INSPECTOR)
     @PostMapping("/submit-batch-data")
     public Result<Void> submitBatchInspectionData(@RequestBody List<BizInspectionRecord> records, HttpServletRequest request) {
         try {
@@ -158,6 +161,7 @@ public class BizInspectionRecordController {
     // 基础 CRUD
 
     @Operation(summary = "新增检验记录")
+    @RequireRole(UserRole.ADMIN)
     @PostMapping
     public Result<Void> add(@RequestBody BizInspectionRecord record) {
         service.add(record);
@@ -165,6 +169,7 @@ public class BizInspectionRecordController {
     }
 
     @Operation(summary = "修改检验记录")
+    @RequireRole(UserRole.ADMIN)
     @PutMapping
     public Result<Void> update(@RequestBody BizInspectionRecord record) {
         service.update(record);
@@ -172,6 +177,7 @@ public class BizInspectionRecordController {
     }
 
     @Operation(summary = "删除检验记录")
+    @RequireRole(UserRole.ADMIN)
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
@@ -179,12 +185,14 @@ public class BizInspectionRecordController {
     }
 
     @Operation(summary = "根据ID查询检验记录")
+    @RequireRole({UserRole.ADMIN, UserRole.INSPECTOR})
     @GetMapping("/{id}")
     public Result<BizInspectionRecord> getById(@PathVariable Long id) {
         return Result.success(service.getById(id));
     }
 
     @Operation(summary = "查询所有检验记录")
+    @RequireRole(UserRole.ADMIN)
     @GetMapping
     public Result<List<BizInspectionRecord>> getAll() {
         return Result.success(service.getAll());

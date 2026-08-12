@@ -103,8 +103,22 @@ public class BizDelegationController {
 
     @Operation(summary = "根据ID查询委托单")
     @GetMapping("/{id}")
-    public Result<BizDelegation> getById(@PathVariable Long id) {
-        return Result.success(service.getById(id));
+    public Result<BizDelegation> getById(@PathVariable Long id, HttpServletRequest request) {
+        BizDelegation delegation = service.getById(id);
+        if (delegation == null) {
+            return Result.error("委托单不存在");
+        }
+
+        // 客户只能查询自己的委托单
+        Object roleIdObj = request.getAttribute("roleId");
+        if (roleIdObj != null && "3".equals(String.valueOf(roleIdObj))) {
+            Object userIdObj = request.getAttribute("userId");
+            if (userIdObj == null || !delegation.getClientId().equals(Long.valueOf(String.valueOf(userIdObj)))) {
+                return Result.error("无权限：您只能查看自己的委托单");
+            }
+        }
+
+        return Result.success(delegation);
     }
 
     @Operation(summary = "查询委托单列表")
