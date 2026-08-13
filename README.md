@@ -108,6 +108,22 @@ spring:
     password: 1234
 ```
 
+### 文件上传目录配置
+
+上传文件（现场照片、报告 PDF 等）默认保存在 `qims-backend/uploads` 目录下（相对启动目录，默认在 `qims-backend` 目录下启动后端）。
+
+如需修改，调整 `application.yml` 中的 `qims.upload.dir` 配置项即可：
+
+```yaml
+# 文件位置：qims-backend/src/main/resources/application.yml
+qims:
+  upload:
+    dir: ./uploads   # 相对启动目录；也可填写绝对路径，如 D:/data/qims-uploads
+```
+
+- 通用上传文件：`{dir}/` 
+- PDF 检验报告：`{dir}/reports/`
+
 ### 密码安全说明
 
 - 所有用户密码使用 **BCrypt** 加密存储

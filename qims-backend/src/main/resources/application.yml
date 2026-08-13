@@ -34,6 +34,9 @@ pagehelper:
 
 # 自定义应用配置
 qims:
+  # 文件上传目录（相对启动目录，默认在 qims-backend 目录下启动）
+  upload:
+    dir: ./uploads
   # JWT 签名密钥
   jwt:
     secret: qims-default-jwt-secret-key-please-change-in-production-2024

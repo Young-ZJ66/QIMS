@@ -184,23 +184,30 @@ public class BizReportServiceImpl implements BizReportService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int update(BizReport record) {
-        // 更新数据库
-        int res = mapper.update(record);
+        // 记录旧报告信息（旧报告编号、旧文件路径），用于重新生成后清理旧 PDF
+        BizReport oldReport = record.getId() != null ? mapper.selectById(record.getId()) : null;
 
-        // 重新生成 PDF，覆盖旧文件
+        // 重新生成 PDF
         try {
-            BizReport existReport = mapper.selectById(record.getId());
-            if (existReport == null) return res;
+            BizReport existReport = oldReport != null ? oldReport : mapper.selectById(record.getId());
+            if (existReport == null) {
+                throw new RuntimeException("原报告不存在，无法重新签发");
+            }
 
             BizDelegation delegation = delegationMapper.selectById(existReport.getDelegationId());
+            if (delegation == null) {
+                throw new RuntimeException("关联的委托单不存在");
+            }
             // 使用条件查询
             List<StdInspectionItem> allItems = itemMapper.selectByStandardId(delegation.getStandardId());
             List<BizSampleTask> tasks = taskMapper.selectByDelegationId(existReport.getDelegationId());
             List<Long> taskIds = tasks.stream().map(BizSampleTask::getId).collect(Collectors.toList());
             List<BizInspectionRecord> inspectionRecords = recordMapper.selectByTaskIds(taskIds);
 
+            // 以最新的报告编号生成新 PDF（若本次修改了编号则使用新编号）
+            String newReportNo = record.getReportNo() != null ? record.getReportNo() : existReport.getReportNo();
             String uploadDir = uploadPathConfig.getReportsDir();
-            String pdfFileName = "Report_" + existReport.getReportNo() + ".pdf";
+            String pdfFileName = "Report_" + newReportNo + ".pdf";
             String pdfPath = uploadDir + File.separator + pdfFileName;
 
             SysUser reviewer = existReport.getReviewerId() != null ? userMapper.selectById(existReport.getReviewerId()) : null;
@@ -220,12 +227,25 @@ public class BizReportServiceImpl implements BizReportService {
             // 调用 PDF 渲染工具类重新生成
             PdfReportHelper.generatePdf(pdfPath, existReport, delegation, standard, client, inspectorName, reviewerName, tasks, inspectionRecords, allItems);
 
+            // 同步最新报告文件路径到数据库
+            record.setReportFileUrl("/uploads/reports/" + pdfFileName);
+
+            // 若报告编号发生变更，删除旧的 PDF 文件
+            if (existReport.getReportNo() != null && !existReport.getReportNo().equals(newReportNo)) {
+                String oldPdfPath = uploadDir + File.separator + "Report_" + existReport.getReportNo() + ".pdf";
+                File oldFile = new File(oldPdfPath);
+                if (oldFile.exists() && !oldFile.delete()) {
+                    log.warn("删除旧报告 PDF 失败: {}", oldPdfPath);
+                }
+            }
+
         } catch (Exception e) {
             log.error("更新 PDF 报告失败", e);
             throw new RuntimeException("更新 PDF 报告失败");
         }
 
-        return res;
+        // 更新数据库（含最新 report_file_url）
+        return mapper.update(record);
     }
 
     @Override

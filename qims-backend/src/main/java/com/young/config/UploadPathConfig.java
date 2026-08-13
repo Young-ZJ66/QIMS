@@ -3,18 +3,17 @@ package com.young.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import java.io.File;
-import java.io.IOException;
 
 /**
- * 上传文件根目录配置
+ * 上传文件目录配置
  * <p>
- * 通过 classpath 定位 qims-backend 工程根目录，确保无论从项目根目录还是 qims-backend 子目录启动，
- * 上传文件始终落在 qims-backend/uploads 下。
+ * 目录由 {@code qims.upload.dir} 配置项指定，默认为 {@code ./uploads}（相对启动目录）。
+ * 默认在 qims-backend 目录下启动后端，上传文件即落在 qims-backend/uploads 下；
+ * 如需调整，修改 application.yml 中的 {@code qims.upload.dir} 即可。
  * </p>
  */
 @Component
@@ -23,9 +22,9 @@ public class UploadPathConfig {
     private static final Logger log = LoggerFactory.getLogger(UploadPathConfig.class);
 
     /**
-     * 上传目录配置项，留空则自动检测。
+     * 上传目录配置项，默认 ./uploads（相对启动目录）。
      */
-    @Value("${qims.upload.dir:}")
+    @Value("${qims.upload.dir:./uploads}")
     private String configuredDir;
 
     /**
@@ -35,38 +34,13 @@ public class UploadPathConfig {
 
     @PostConstruct
     public void init() {
-        if (configuredDir != null && !configuredDir.trim().isEmpty()) {
-            File dir = new File(configuredDir.trim());
-            uploadRootPath = dir.getAbsolutePath();
-        } else {
-            uploadRootPath = detectBackendUploadDir();
-        }
+        File dir = new File(configuredDir.trim());
+        uploadRootPath = dir.getAbsolutePath();
 
-        File dir = new File(uploadRootPath);
         if (!dir.exists() && !dir.mkdirs()) {
             log.warn("无法创建上传目录: {}", uploadRootPath);
         }
         log.info("上传文件根目录: {}", uploadRootPath);
-    }
-
-    /**
-     * 通过 classpath 定位 qims-backend 目录，返回其下的 uploads 子目录。
-     * classpath 根目录在 IDE 或 mvn 运行时为 qims-backend/target/classes/，
-     * 上溯两级即得到 qims-backend/ 工程根目录。
-     */
-    private String detectBackendUploadDir() {
-        try {
-            File classpathRoot = new ClassPathResource(".").getFile();
-            File targetDir = classpathRoot.getCanonicalFile().getParentFile();
-            if (targetDir == null || targetDir.getParentFile() == null) {
-                throw new IOException("无法解析 classpath 父级目录");
-            }
-            File backendRoot = targetDir.getParentFile();
-            return backendRoot.getAbsolutePath() + File.separator + "uploads";
-        } catch (IOException e) {
-            log.warn("无法通过 classpath 定位工程根目录，回退到工作目录下的 uploads: {}", e.getMessage());
-            return System.getProperty("user.dir") + File.separator + "uploads";
-        }
     }
 
     /**
