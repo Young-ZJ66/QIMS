@@ -29,6 +29,13 @@
         FROM biz_inspection_record
     </select>
 
+    <!-- 按单个任务ID查询检测记录 -->
+    <select id="selectByTaskId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_inspection_record
+        WHERE task_id = #{taskId}
+    </select>
+
     <!-- 按任务ID批量查询检测记录 -->
     <select id="selectByTaskIds" resultMap="BaseResultMap">
         SELECT <include refid="Base_Column_List" />
@@ -65,5 +72,14 @@
     <delete id="deleteById">
         DELETE FROM biz_inspection_record WHERE id = #{id}
     </delete>
+
+    <select id="countFailedByItemName" resultType="map">
+        SELECT i.item_name AS name, COUNT(*) AS value
+        FROM biz_inspection_record r
+        JOIN std_inspection_item i ON r.item_id = i.id
+        WHERE r.result = 0
+        GROUP BY i.item_name
+        ORDER BY value DESC
+    </select>
 
 </mapper>

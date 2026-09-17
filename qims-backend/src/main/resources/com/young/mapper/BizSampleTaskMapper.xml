@@ -68,4 +68,21 @@
         DELETE FROM biz_sample_task WHERE id = #{id}
     </delete>
 
+    <select id="selectByDelegationIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_sample_task
+        WHERE delegation_id IN
+        <foreach collection="delegationIds" item="did" open="(" separator="," close=")">
+            #{did}
+        </foreach>
+    </select>
+
+    <select id="countByStatus" resultType="int">
+        SELECT COUNT(*) FROM biz_sample_task WHERE status = #{status}
+    </select>
+
+    <select id="countCompletedByInspectorId" resultType="int">
+        SELECT COUNT(*) FROM biz_sample_task WHERE inspector_id = #{inspectorId} AND status = 1
+    </select>
+
 </mapper>

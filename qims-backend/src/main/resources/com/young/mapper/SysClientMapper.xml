@@ -64,4 +64,13 @@
         DELETE FROM sys_client WHERE id = #{id}
     </delete>
 
+    <select id="selectByIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM sys_client
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
 </mapper>

@@ -11,6 +11,8 @@ public interface SysClientMapper {
     int deleteById(Long id);
     SysClient selectById(Long id);
     List<SysClient> selectAll();
+    /** 按ID列表批量查询 */
+    List<SysClient> selectByIds(@org.apache.ibatis.annotations.Param("ids") List<Long> ids);
     /** 按登录账号精确查询 */
     SysClient selectByLoginAccount(@org.apache.ibatis.annotations.Param("loginAccount") String loginAccount);
 }

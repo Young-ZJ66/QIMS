@@ -13,4 +13,10 @@ public interface BizReportMapper {
     List<BizReport> selectAll();
     /** 按委托单ID批量查询报告 */
     List<BizReport> selectByDelegationIds(@org.apache.ibatis.annotations.Param("delegationIds") List<Long> delegationIds);
+    /** 统计当月签发报告数 */
+    int countThisMonth();
+    /** 统计合格报告数 */
+    int countQualified();
+    /** 统计报告总数 */
+    int countTotal();
 }

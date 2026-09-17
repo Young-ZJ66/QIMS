@@ -63,4 +63,33 @@
         DELETE FROM biz_delegation WHERE id = #{id}
     </delete>
 
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_delegation
+        WHERE status = #{status}
+        ORDER BY id DESC
+    </select>
+
+    <select id="countByRecentDays" resultType="map">
+        SELECT DATE(submit_time) AS submit_date, COUNT(*) AS cnt
+        FROM biz_delegation
+        WHERE submit_time >= DATE_SUB(CURDATE(), INTERVAL #{days} DAY)
+        GROUP BY DATE(submit_time)
+        ORDER BY submit_date
+    </select>
+
+    <select id="selectByClientIds" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM biz_delegation
+        WHERE client_id IN
+        <foreach collection="clientIds" item="cid" open="(" separator="," close=")">
+            #{cid}
+        </foreach>
+        ORDER BY id DESC
+    </select>
+
+    <select id="countTotal" resultType="int">
+        SELECT COUNT(*) FROM biz_delegation
+    </select>
+
 </mapper>

@@ -62,4 +62,17 @@
         DELETE FROM biz_report WHERE id = #{id}
     </delete>
 
+    <select id="countThisMonth" resultType="int">
+        SELECT COUNT(*) FROM biz_report
+        WHERE YEAR(issue_time) = YEAR(CURDATE()) AND MONTH(issue_time) = MONTH(CURDATE())
+    </select>
+
+    <select id="countQualified" resultType="int">
+        SELECT COUNT(*) FROM biz_report WHERE final_conclusion = 1
+    </select>
+
+    <select id="countTotal" resultType="int">
+        SELECT COUNT(*) FROM biz_report
+    </select>
+
 </mapper>

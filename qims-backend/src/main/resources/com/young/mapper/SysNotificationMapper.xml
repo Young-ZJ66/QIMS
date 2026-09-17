@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.young.mapper.SysNotificationMapper">
+
+    <resultMap id="BaseResultMap" type="com.young.pojo.SysNotification">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="user_type" property="userType" />
+        <result column="title" property="title" />
+        <result column="content" property="content" />
+        <result column="type" property="type" />
+        <result column="biz_type" property="bizType" />
+        <result column="biz_id" property="bizId" />
+        <result column="is_read" property="isRead" />
+        <result column="create_time" property="createTime" />
+        <result column="read_time" property="readTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_id, user_type, title, content, type, biz_type, biz_id, is_read, create_time, read_time
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_notification (user_id, user_type, title, content, type, biz_type, biz_id, is_read, create_time)
+        VALUES (#{userId}, #{userType}, #{title}, #{content}, #{type}, #{bizType}, #{bizId}, 0, NOW())
+    </insert>
+
+    <update id="markAsRead">
+        UPDATE sys_notification SET is_read = 1, read_time = NOW() WHERE id = #{id} AND is_read = 0
+    </update>
+
+    <update id="markAllAsRead">
+        UPDATE sys_notification SET is_read = 1, read_time = NOW() WHERE user_id = #{userId} AND user_type = #{userType} AND is_read = 0
+    </update>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" /> FROM sys_notification WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM sys_notification
+        WHERE user_id = #{userId} AND user_type = #{userType}
+        ORDER BY create_time DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*) FROM sys_notification WHERE user_id = #{userId} AND user_type = #{userType} AND is_read = 0
+    </select>
+
+</mapper>
