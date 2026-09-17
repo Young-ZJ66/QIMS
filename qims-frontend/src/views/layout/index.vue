@@ -72,7 +72,9 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <NotificationBell class="notification-wrapper" />
+          <div class="notification-wrapper">
+            <NotificationBell />
+          </div>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32" style="background-color: #1890ff;">
