@@ -72,7 +72,7 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <NotificationBell style="margin-right: 16px;" />
+          <NotificationBell class="notification-wrapper" />
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32" style="background-color: #1890ff;">
@@ -394,6 +394,10 @@ const handleChangePassword = () => {
   align-items: center;
   cursor: pointer;
   color: #333;
+}
+
+.notification-wrapper {
+  margin-right: 32px;
 }
 
 .username {
