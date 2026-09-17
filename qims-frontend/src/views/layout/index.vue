@@ -72,9 +72,6 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <div class="notification-wrapper">
-            <NotificationBell />
-          </div>
           <el-dropdown @command="handleCommand">
             <span class="user-info">
               <el-avatar :size="32" style="background-color: #1890ff;">
@@ -90,6 +87,9 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          <div class="notification-wrapper">
+            <NotificationBell />
+          </div>
         </div>
       </el-header>
 
@@ -399,7 +399,7 @@ const handleChangePassword = () => {
 }
 
 .notification-wrapper {
-  margin-right: 32px;
+  margin-left: 24px;
 }
 
 .username {
