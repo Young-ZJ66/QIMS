@@ -21,6 +21,7 @@ import java.util.Map;
 public class JwtUtils {
 
     private static final Logger log = LoggerFactory.getLogger(JwtUtils.class);
+    private static final String ISSUER = "qims";
 
     /** 从配置文件读取的密钥 */
     @Value("${qims.jwt.secret}")
@@ -38,17 +39,14 @@ public class JwtUtils {
 
     @PostConstruct
     public void init() {
-        // 确保密钥长度满足 HS256 的最低要求（256 bit = 32 byte）
         byte[] keyBytes = secretKey.getBytes();
         if (keyBytes.length < 32) {
-            // 密钥过短时进行填充，保证安全性
-            byte[] paddedKey = new byte[32];
-            System.arraycopy(keyBytes, 0, paddedKey, 0, keyBytes.length);
-            key = Keys.hmacShaKeyFor(paddedKey);
-            log.warn("JWT 密钥长度不足32字节，已自动填充。生产环境请配置更长的密钥。");
-        } else {
-            key = Keys.hmacShaKeyFor(keyBytes);
+            throw new IllegalArgumentException(
+                "JWT 密钥长度必须至少32字节，当前仅 " + keyBytes.length + " 字节。" +
+                "请通过环境变量 JWT_SECRET 配置强密钥。"
+            );
         }
+        key = Keys.hmacShaKeyFor(keyBytes);
         expireTimeMillis = expireHours * 60L * 60L * 1000L;
         log.info("JWT 工具类初始化完成，Token 有效期: {} 小时", expireHours);
     }
@@ -70,6 +68,7 @@ public class JwtUtils {
     public String generateToken(Map<String, Object> claims) {
         return Jwts.builder()
                 .setClaims(claims)
+                .setIssuer(ISSUER)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expireTimeMillis))
                 .signWith(key)
@@ -82,6 +81,7 @@ public class JwtUtils {
     public Claims parseToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
+                .requireIssuer(ISSUER)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -99,7 +99,8 @@ public class JwtUtils {
             long remaining = claims.getExpiration().getTime() - System.currentTimeMillis();
             return remaining < (expireTimeMillis / 4);
         } catch (Exception e) {
-            return true;
+            log.warn("检查 Token 过期状态失败: {}", e.getMessage());
+            return false;
         }
     }
 }

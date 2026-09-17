@@ -1,16 +1,26 @@
 server:
   port: 8080
+  shutdown: graceful
 
 spring:
   application:
     name: qims-backend
 
-  # MySQL 8.0 配置
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  # MySQL 8.0 配置（生产环境通过环境变量覆盖）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/qims_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: 1234
+    url: ${DB_URL:jdbc:mysql://localhost:3306/qims_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:1234}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
 
   # 文件上传大小限制
   servlet:
@@ -34,18 +44,18 @@ pagehelper:
 
 # 自定义应用配置
 qims:
-  # 文件上传目录（相对启动目录，默认在 qims-backend 目录下启动）
+  # 文件上传目录
   upload:
-    dir: ./uploads
-  # JWT 签名密钥
+    dir: ${UPLOAD_DIR:./uploads}
+  # JWT 签名密钥（生产环境必须通过环境变量配置强密钥）
   jwt:
-    secret: qims-default-jwt-secret-key-please-change-in-production-2024
-    expire-hours: 24
+    secret: ${JWT_SECRET:qims-default-jwt-secret-key-please-change-in-production-2024}
+    expire-hours: ${JWT_EXPIRE_HOURS:24}
   # CORS 允许的来源（逗号分隔）
   cors:
-    allowed-origins: http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
 
-# springdoc-openapi 配置
+# springdoc-openapi 配置（生产环境禁用）
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -55,8 +65,26 @@ springdoc:
     path: /v3/api-docs
   packages-to-scan: com.young.controller
 
-# Knife4j 增强
+# Knife4j 增强（生产环境通过 profile 禁用）
 knife4j:
-  enable: true
+  enable: ${KNIFE4J_ENABLE:true}
   setting:
     language: zh_cn
+
+# Actuator 健康检查
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# 日志配置
+logging:
+  level:
+    com.young: info
+    org.springframework.web: warn
+  pattern:
+    dateformat: yyyy-MM-dd HH:mm:ss.SSS

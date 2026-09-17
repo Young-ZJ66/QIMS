@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 public class LoginInterceptor implements HandlerInterceptor {
 
     private static final Logger log = LoggerFactory.getLogger(LoginInterceptor.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Autowired
     private JwtUtils jwtUtils;
@@ -53,16 +54,17 @@ public class LoginInterceptor implements HandlerInterceptor {
 
                 return true;
             } catch (Exception e) {
-                log.debug("Token 验证失败: {}", e.getMessage());
+                log.warn("Token 验证失败: {} - {}", request.getRequestURI(), e.getMessage());
             }
         }
 
         // 拦截并返回 401 未登录
         response.setContentType("application/json;charset=utf-8");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         PrintWriter out = response.getWriter();
         Result<String> error = Result.error("未登录或 Token 已过期");
         error.setCode(401);
-        out.write(new ObjectMapper().writeValueAsString(error));
+        out.write(objectMapper.writeValueAsString(error));
         out.flush();
         out.close();
         return false;
