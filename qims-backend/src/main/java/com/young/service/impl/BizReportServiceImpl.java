@@ -23,6 +23,7 @@ import com.young.mapper.SysOperateLogMapper;
 import com.young.service.BizReportService;
 import com.young.config.UploadPathConfig;
 import com.young.utils.PdfReportHelper;
+import com.young.utils.NotificationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -68,6 +69,9 @@ public class BizReportServiceImpl implements BizReportService {
 
     @Autowired
     private SysOperateLogMapper logMapper;
+
+    @Autowired
+    private NotificationHelper notificationHelper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -177,6 +181,14 @@ public class BizReportServiceImpl implements BizReportService {
         operateLog.setDescription("签发了报告编号 " + record.getReportNo());
         operateLog.setCreateTime(LocalDateTime.now());
         logMapper.insert(operateLog);
+
+        // 通知客户报告已签发
+        if (delegation.getClientId() != null) {
+            String conclusion = record.getFinalConclusion() != null && record.getFinalConclusion() == 1 ? "合格" : "不合格";
+            notificationHelper.notifyClient(delegation.getClientId(), "报告签发通知",
+                "您的委托单 " + delegation.getDelegationNo() + " 检验报告已签发，结论：" + conclusion + "。请查看。",
+                "success", "report", record.getId());
+        }
 
         return 1;
     }

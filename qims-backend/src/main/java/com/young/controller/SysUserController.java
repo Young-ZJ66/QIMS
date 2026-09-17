@@ -2,6 +2,7 @@ package com.young.controller;
 
 import com.young.pojo.SysUser;
 import com.young.service.SysUserService;
+import com.young.mapper.SysUserMapper;
 import com.young.common.Result;
 import com.young.annotation.RequireRole;
 import com.young.pojo.enums.UserRole;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 系统用户接口
@@ -25,6 +27,9 @@ public class SysUserController {
 
     @Autowired
     private SysUserService service;
+
+    @Autowired
+    private SysUserMapper userMapper;
 
     @Operation(summary = "新增用户")
     @RequireRole(UserRole.ADMIN)
@@ -84,16 +89,35 @@ public class SysUserController {
     @RequireRole(UserRole.ADMIN)
     @GetMapping
     public Result<Object> getAll(
+            @RequestParam(required = false) Integer roleId,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer pageSize) {
+
+        List<SysUser> list;
+        if (roleId != null) {
+            // 按角色过滤
+            list = service.getAll().stream()
+                    .filter(u -> u.getRoleId() != null && u.getRoleId() == roleId)
+                    .collect(Collectors.toList());
+        } else {
+            list = service.getAll();
+        }
+
         // 无分页参数时，返回全部
         if (page == null || pageSize == null) {
-            return Result.success(service.getAll());
+            return Result.success(list);
         }
 
         // 使用 PageHelper 分页
         PageHelper.startPage(page, pageSize);
-        List<SysUser> list = service.getAll();
+        // 重新查询以应用分页（PageHelper 需要在查询前调用）
+        if (roleId != null) {
+            list = service.getAll().stream()
+                    .filter(u -> u.getRoleId() != null && u.getRoleId() == roleId)
+                    .collect(Collectors.toList());
+        } else {
+            list = service.getAll();
+        }
         PageInfo<SysUser> pageInfo = new PageInfo<>(list);
 
         // 组装分页响应
@@ -102,7 +126,7 @@ public class SysUserController {
         pageResult.put("total", pageInfo.getTotal());
         pageResult.put("page", pageInfo.getPageNum());
         pageResult.put("pageSize", pageInfo.getPageSize());
-        pageResult.put("pages", pageInfo.getPages()); // 总页数
+        pageResult.put("pages", pageInfo.getPages());
 
         return Result.success(pageResult);
     }

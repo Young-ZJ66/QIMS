@@ -9,6 +9,7 @@ import com.young.mapper.BizSampleTaskMapper;
 import com.young.service.BizDelegationService;
 import com.young.mapper.SysOperateLogMapper;
 import com.young.pojo.SysOperateLog;
+import com.young.utils.NotificationHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,9 @@ public class BizDelegationServiceImpl implements BizDelegationService {
 
     @Autowired
     private SysOperateLogMapper logMapper;
+
+    @Autowired
+    private NotificationHelper notificationHelper;
 
     @Override
     public int add(BizDelegation record) {
@@ -85,6 +89,11 @@ public class BizDelegationServiceImpl implements BizDelegationService {
         operateLog.setCreateTime(LocalDateTime.now());
         logMapper.insert(operateLog);
 
+        // 通知管理员有新委托
+        notificationHelper.notifyInternalUser(1L, "新委托单",
+            "客户提交了新的检验委托单 " + delegationNo + "，请及时处理。",
+            "primary", "delegation", delegation.getId());
+
         return delegationNo;
     }
 
@@ -135,6 +144,11 @@ public class BizDelegationServiceImpl implements BizDelegationService {
             operateLog.setCreateTime(LocalDateTime.now());
             logMapper.insert(operateLog);
         }
+
+        // 通知检测员有新任务
+        notificationHelper.notifyInternalUser(inspectorId, "新检测任务",
+            "管理员为您分配了 " + quantity + " 个盲样检测任务，请及时处理。",
+            "warning", "task", delegationId);
 
         // 如果是多样品，返回提示语包含数量
         if (quantity > 1) {

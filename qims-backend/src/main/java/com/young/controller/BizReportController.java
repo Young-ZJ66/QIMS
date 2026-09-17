@@ -6,6 +6,7 @@ import com.young.common.Result;
 import com.young.annotation.RequireRole;
 import com.young.pojo.enums.UserRole;
 import com.young.mapper.BizDelegationMapper;
+import com.young.mapper.BizReportMapper;
 import com.young.pojo.BizDelegation;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,26 +31,38 @@ public class BizReportController {
     private BizReportService service;
 
     @Autowired
+    private BizReportMapper reportMapper;
+
+    @Autowired
     private BizDelegationMapper bizDelegationMapper;
 
     @Operation(summary = "新增报告")
     @RequireRole(UserRole.ADMIN)
     @PostMapping
     public Result<Void> add(@RequestBody BizReport record, HttpServletRequest request) {
-        Object userIdObj = request.getAttribute("userId");
-        if (userIdObj != null) {
+        try {
+            Object userIdObj = request.getAttribute("userId");
+            if (userIdObj == null) {
+                return Result.error("未获取到审核人信息");
+            }
             record.setReviewerId(Long.valueOf(String.valueOf(userIdObj)));
+            service.add(record);
+            return Result.success();
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
         }
-        service.add(record);
-        return Result.success();
     }
 
     @Operation(summary = "修改报告")
     @RequireRole(UserRole.ADMIN)
     @PutMapping
     public Result<Void> update(@RequestBody BizReport record) {
-        service.update(record);
-        return Result.success();
+        try {
+            service.update(record);
+            return Result.success();
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     @Operation(summary = "删除报告")
@@ -104,9 +117,8 @@ public class BizReportController {
                 return Result.success(Collections.emptyList());
             }
             Set<Long> delegationIds = delegations.stream().map(BizDelegation::getId).collect(Collectors.toSet());
-            List<BizReport> reports = service.getAll().stream()
-                    .filter(r -> delegationIds.contains(r.getDelegationId()))
-                    .collect(Collectors.toList());
+            // 使用批量查询替代 service.getAll() + Java 过滤
+            List<BizReport> reports = reportMapper.selectByDelegationIds(new java.util.ArrayList<>(delegationIds));
             return Result.success(reports);
         }
         return Result.success(service.getAll());

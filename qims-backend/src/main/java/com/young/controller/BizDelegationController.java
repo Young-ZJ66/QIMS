@@ -7,6 +7,7 @@ import com.young.annotation.RequireRole;
 import com.young.pojo.enums.UserRole;
 import com.young.pojo.SysClient;
 import com.young.mapper.SysClientMapper;
+import com.young.mapper.BizDelegationMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +28,9 @@ public class BizDelegationController {
 
     @Autowired
     private BizDelegationService service;
+
+    @Autowired
+    private BizDelegationMapper bizDelegationMapper;
 
     @Autowired
     private SysClientMapper clientMapper;
@@ -123,7 +127,9 @@ public class BizDelegationController {
 
     @Operation(summary = "查询委托单列表")
     @GetMapping
-    public Result<List<BizDelegation>> getAll(HttpServletRequest request) {
+    public Result<List<BizDelegation>> getAll(
+            @RequestParam(required = false) Integer status,
+            HttpServletRequest request) {
         List<BizDelegation> delegations;
         Object roleIdObj = request.getAttribute("roleId");
 
@@ -136,18 +142,34 @@ public class BizDelegationController {
                 return error;
             }
             delegations = service.getByClientId(Long.valueOf(String.valueOf(clientIdObj)));
+            // 如果指定了状态，在服务端过滤
+            if (status != null) {
+                delegations = delegations.stream()
+                        .filter(d -> d.getStatus() != null && d.getStatus() == status)
+                        .collect(Collectors.toList());
+            }
+        } else if (status != null) {
+            // 管理员/检测员可以按状态过滤
+            delegations = bizDelegationMapper.selectByStatus(status);
         } else {
             delegations = service.getAll();
         }
 
-        // 批量填充客户名称
+        // 批量填充客户名称（只查询涉及的客户，而非全表）
         if (delegations != null && !delegations.isEmpty()) {
-            List<SysClient> clients = clientMapper.selectAll();
-            Map<Long, String> clientMap = clients.stream().collect(
-                    Collectors.toMap(SysClient::getId, SysClient::getCompanyName));
-            for (BizDelegation d : delegations) {
-                if (d.getClientId() != null) {
-                    d.setClientName(clientMap.get(d.getClientId()));
+            List<Long> clientIds = delegations.stream()
+                    .map(BizDelegation::getClientId)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!clientIds.isEmpty()) {
+                List<SysClient> clients = clientMapper.selectByIds(clientIds);
+                Map<Long, String> clientMap = clients.stream().collect(
+                        Collectors.toMap(SysClient::getId, SysClient::getCompanyName));
+                for (BizDelegation d : delegations) {
+                    if (d.getClientId() != null) {
+                        d.setClientName(clientMap.get(d.getClientId()));
+                    }
                 }
             }
         }

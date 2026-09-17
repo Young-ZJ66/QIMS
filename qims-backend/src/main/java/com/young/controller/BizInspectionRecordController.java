@@ -8,6 +8,7 @@ import com.young.pojo.enums.UserRole;
 import com.young.pojo.enums.TaskStatus;
 import com.young.pojo.enums.DelegationStatus;
 import com.young.service.BizInspectionRecordService;
+import com.young.mapper.BizInspectionRecordMapper;
 import com.young.mapper.BizSampleTaskMapper;
 import com.young.mapper.BizDelegationMapper;
 import com.young.mapper.StdInspectionItemMapper;
@@ -41,6 +42,9 @@ public class BizInspectionRecordController {
     private BizInspectionRecordService service;
 
     @Autowired
+    private BizInspectionRecordMapper recordMapper;
+
+    @Autowired
     private BizSampleTaskMapper taskMapper;
 
     @Autowired
@@ -65,11 +69,11 @@ public class BizInspectionRecordController {
             return Result.success(Collections.emptyList());
         }
 
-        // 批量查询检测记录
+        // 使用批量查询替代 service.getAll() + Java 过滤
         List<Long> taskIds = tasks.stream().map(BizSampleTask::getId).collect(Collectors.toList());
-        List<BizInspectionRecord> records = service.getAll().stream()
-                .filter(r -> taskIds.contains(r.getTaskId()))
-                .collect(Collectors.toList());
+        List<BizInspectionRecord> records = taskIds.size() == 1
+                ? recordMapper.selectByTaskId(taskIds.get(0))
+                : recordMapper.selectByTaskIds(taskIds);
 
         // 批量查询检测项目
         Set<Long> itemIds = records.stream().map(BizInspectionRecord::getItemId).collect(Collectors.toSet());
