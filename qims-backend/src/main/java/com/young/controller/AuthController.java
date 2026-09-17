@@ -80,6 +80,7 @@ public class AuthController {
                 Map<String, Object> data = new HashMap<>();
                 data.put("token", token);
                 data.put("userId", client.getId());
+                data.put("clientId", client.getId());
                 data.put("username", client.getLoginAccount());
                 data.put("realName", client.getCompanyName());
                 data.put("roleId", 3);

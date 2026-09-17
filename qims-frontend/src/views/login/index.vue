@@ -130,6 +130,9 @@ const handleLogin = () => {
         localStorage.setItem('userId', res.userId)
         localStorage.setItem('username', res.username)
         localStorage.setItem('roleId', res.roleId)
+        if (res.clientId) {
+          localStorage.setItem('clientId', res.clientId)
+        }
         
         ElMessage.success(`欢迎回来, ${res.realName || res.username}`)
         router.push('/')
@@ -189,10 +192,12 @@ const handleRegister = () => {
       }
       request.post('/auth/register', payload).then(() => {
         ElMessage.success('注册成功，请使用新账号登录')
+        // 先保存注册账号，再重置表单
+        const registeredAccount = regForm.loginAccount
         showRegisterDialog.value = false
         regFormRef.value.resetFields()
         // 自动填入刚刚注册的账号
-        loginForm.username = regForm.loginAccount
+        loginForm.username = registeredAccount
       }).finally(() => {
         regLoading.value = false
       })
@@ -207,19 +212,54 @@ const handleRegister = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f0f2f5;
-  background-image: url('https://gw.alipayobjects.com/zos/rmsportal/TVYTbAXWheQpRcWDaQGD.svg');
-  background-repeat: no-repeat;
-  background-position: center 110px;
-  background-size: 100%;
+  background: linear-gradient(135deg, #e8f4f8 0%, #f0f2f5 50%, #e8ecf4 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, rgba(24, 144, 255, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 70% 60%, rgba(102, 126, 234, 0.06) 0%, transparent 50%);
+  animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-2%, -2%); }
 }
 
 .login-box {
-  width: 400px;
+  width: 420px;
   padding: 40px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.login-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 480px) {
+  .login-box {
+    width: 90%;
+    padding: 24px;
+  }
+
+  .login-header h2 {
+    font-size: 22px;
+  }
 }
 
 .login-header {

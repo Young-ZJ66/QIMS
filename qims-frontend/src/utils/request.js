@@ -5,7 +5,7 @@ import router from '../router'
 // 创建 axios 实例
 const service = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API || '/api', // 通过 vite 代理或直接访问
-  timeout: 10000 // 请求超时时间
+  timeout: 30000 // 请求超时时间
 })
 
 // 标记是否正在刷新 Token，避免并发刷新
@@ -60,7 +60,6 @@ service.interceptors.response.use(
         }).then(refreshRes => {
           if (refreshRes.data && refreshRes.data.code === 200 && refreshRes.data.data.token) {
             localStorage.setItem('token', refreshRes.data.data.token)
-            console.log('Token 已静默刷新')
           }
         }).catch(() => {
           // 刷新失败，忽略，下次请求会再次尝试或最终被 401 踢出
@@ -74,11 +73,18 @@ service.interceptors.response.use(
     }
   },
   error => {
-    ElMessage({
-      message: error.message || '网络异常',
-      type: 'error',
-      duration: 5 * 1000
-    })
+    let message = '网络异常，请稍后重试'
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      message = '请求超时，请检查网络后重试'
+    } else if (error.response) {
+      const status = error.response.status
+      if (status === 404) message = '请求的资源不存在'
+      else if (status === 500) message = '服务器内部错误'
+      else if (status === 502 || status === 503) message = '服务暂时不可用，请稍后重试'
+    } else if (!error.response && error.message?.includes('Network Error')) {
+      message = '网络连接失败，请检查网络'
+    }
+    ElMessage({ message, type: 'error', duration: 5 * 1000 })
     return Promise.reject(error)
   }
 )
@@ -92,7 +98,13 @@ export function getRoleFromToken() {
   if (!token) return null
   try {
     const payload = token.split('.')[1]
-    const decoded = JSON.parse(atob(payload))
+    // JWT uses URL-safe base64 encoding, convert to standard base64
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const decoded = JSON.parse(atob(base64))
+    // Check token expiry
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+      return null
+    }
     return decoded.roleId || null
   } catch (e) {
     return null
