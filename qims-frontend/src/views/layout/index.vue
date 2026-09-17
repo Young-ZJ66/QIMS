@@ -1,13 +1,14 @@
 <template>
   <el-container class="layout-container">
     <!-- 左侧边栏 -->
-    <el-aside width="260px" class="sidebar">
+    <el-aside :width="isCollapsed ? '64px' : '260px'" class="sidebar">
       <div class="logo-box">
         <el-icon class="logo-icon" color="#1890ff"><Cpu /></el-icon>
-        <span class="logo-text">食品质量检测系统</span>
+        <span v-show="!isCollapsed" class="logo-text">食品质量检测系统</span>
       </div>
       <el-menu
         :default-active="$route.path"
+        :collapse="isCollapsed"
         class="el-menu-vertical"
         background-color="#001529"
         text-color="#a6adb4"
@@ -62,16 +63,21 @@
       <!-- 顶部 Header -->
       <el-header class="header">
         <div class="header-left">
-          <el-icon class="collapse-icon"><Fold /></el-icon>
+          <el-icon class="collapse-icon" @click="isCollapsed = !isCollapsed">
+            <component :is="isCollapsed ? 'Expand' : 'Fold'" />
+          </el-icon>
           <el-breadcrumb separator="/">
             <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item>{{ $route.meta.title || '当前页面' }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="header-right">
+          <NotificationBell style="margin-right: 16px;" />
           <el-dropdown @command="handleCommand">
             <span class="user-info">
-              <el-avatar :size="32" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
+              <el-avatar :size="32" style="background-color: #1890ff;">
+            {{ currentUsername?.charAt(0)?.toUpperCase() || 'U' }}
+          </el-avatar>
               <span class="username">{{ currentUsername }}</span>
               <el-icon class="el-icon--right"><arrow-down /></el-icon>
             </span>
@@ -89,7 +95,9 @@
       <el-main class="main-view">
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
-            <component :is="Component" />
+            <keep-alive>
+              <component :is="Component" />
+            </keep-alive>
           </transition>
         </router-view>
       </el-main>
@@ -162,9 +170,11 @@ import { computed, ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request, { getRoleFromToken } from '@/utils/request'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const router = useRouter()
 const currentUsername = ref(localStorage.getItem('username') || '用户')
+const isCollapsed = ref(false)
 // 从 JWT Token 解析角色
 const roleId = ref(getRoleFromToken())
 
@@ -286,7 +296,11 @@ const handleChangePassword = () => {
       
       // 密码修改成功后，强制退出登录
       setTimeout(() => {
-        localStorage.clear()
+        localStorage.removeItem('token')
+        localStorage.removeItem('username')
+        localStorage.removeItem('roleId')
+        localStorage.removeItem('userId')
+        localStorage.removeItem('clientId')
         router.push('/login')
       }, 1500)
     } finally {
@@ -329,6 +343,13 @@ const handleChangePassword = () => {
 
 .el-menu-vertical {
   border-right: none;
+  transition: width 0.3s;
+}
+
+/* 折叠状态下的菜单样式 */
+.sidebar :deep(.el-menu--collapse) .el-sub-menu__title span,
+.sidebar :deep(.el-menu--collapse) .el-sub-menu__title .el-sub-menu__icon-arrow {
+  display: none;
 }
 
 /* 覆盖 Element Plus 菜单激活状态的背景色 */
@@ -397,5 +418,22 @@ const handleChangePassword = () => {
 .fade-transform-leave-to {
   opacity: 0;
   transform: translateX(30px);
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    z-index: 100;
+    height: 100vh;
+  }
+
+  .header-left .collapse-icon {
+    display: block;
+  }
+
+  .main-view {
+    padding: 12px;
+  }
 }
 </style>

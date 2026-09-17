@@ -2,7 +2,7 @@
   <div class="dashboard-container" v-loading="loading">
     <!-- 顶部数据概览卡片 -->
     <el-row :gutter="20">
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <el-card shadow="hover" class="data-card">
           <div class="card-header">
             <span>今日新增委托</span>
@@ -22,7 +22,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <el-card shadow="hover" class="data-card">
           <div class="card-header">
             <span>待检盲样任务</span>
@@ -32,7 +32,7 @@
           <div class="card-footer">检测员正在处理中...</div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <el-card shadow="hover" class="data-card">
           <div class="card-header">
             <span v-if="stats.isInspector">当月已完成任务</span>
@@ -40,13 +40,13 @@
             <el-tag type="success" size="small">月度</el-tag>
           </div>
           <div class="card-value">
-            {{ stats.monthReports || 0 }} 
+            {{ stats.monthReports || 0 }}
             <span class="unit">{{ stats.isInspector ? '个' : '份' }}</span>
           </div>
           <div class="card-footer">完成率 <span class="up">{{ stats.completionRate || '0.0' }}%</span></div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <el-card shadow="hover" class="data-card">
           <div class="card-header">
             <span>总体合格率</span>
@@ -60,16 +60,15 @@
 
     <!-- 图表展示区 -->
     <el-row :gutter="20" class="chart-row">
-      <el-col :span="16">
+      <el-col :xs="24" :sm="24" :md="16">
         <el-card shadow="hover" class="chart-card">
           <template #header>
             <div class="card-title">近7日检测委托趋势</div>
           </template>
-          <!-- ECharts 挂载点 -->
           <div class="mock-chart-bar" ref="barChartRef"></div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="24" :md="8">
         <el-card shadow="hover" class="chart-card">
           <template #header>
             <div class="card-title">不良品缺陷分类分析</div>
@@ -106,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import request from '@/utils/request'
 import * as echarts from 'echarts'
 
@@ -125,9 +124,13 @@ const stats = ref({
   dynamicLogs: []
 })
 
+let barChart = null
+let pieChart = null
+
 const initCharts = () => {
   if (barChartRef.value) {
-    const barChart = echarts.init(barChartRef.value)
+    if (barChart) barChart.dispose()
+    barChart = echarts.init(barChartRef.value)
     barChart.setOption({
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'category', data: stats.value.trendDates },
@@ -145,7 +148,8 @@ const initCharts = () => {
   }
 
   if (pieChartRef.value) {
-    const pieChart = echarts.init(pieChartRef.value)
+    if (pieChart) pieChart.dispose()
+    pieChart = echarts.init(pieChartRef.value)
     pieChart.setOption({
       tooltip: { trigger: 'item' },
       series: [
@@ -167,6 +171,11 @@ const initCharts = () => {
   }
 }
 
+const handleResize = () => {
+  barChart?.resize()
+  pieChart?.resize()
+}
+
 const fetchStats = () => {
   loading.value = true
   request.get('/dashboard/stats').then(res => {
@@ -181,6 +190,13 @@ const fetchStats = () => {
 
 onMounted(() => {
   fetchStats()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  barChart?.dispose()
+  pieChart?.dispose()
 })
 </script>
 
@@ -222,10 +238,10 @@ onMounted(() => {
 }
 
 .up {
-  color: #f56c6c;
+  color: #67c23a;
 }
 .down {
-  color: #67c23a;
+  color: #f56c6c;
 }
 
 .chart-row {

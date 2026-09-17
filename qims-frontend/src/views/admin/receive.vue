@@ -92,20 +92,18 @@ const formatTime = (timeStr) => {
   return timeStr.replace('T', ' ').substring(0, 19)
 }
 
-// 获取质检员列表
+// 获取质检员列表（服务端按角色过滤）
 const fetchInspectorList = () => {
-  request.get('/sys-user').then(res => {
-    // 过滤出 roleId === 2 (质检员) 的用户
-    inspectorList.value = (res || []).filter(user => user.roleId === 2)
+  request.get('/sys-user', { params: { roleId: 2 } }).then(res => {
+    inspectorList.value = Array.isArray(res) ? res : (res?.list || [])
   })
 }
 
-// 获取待收样列表
+// 获取待收样列表（服务端按状态过滤）
 const fetchPendingList = () => {
   loading.value = true
-  request.get('/biz-delegation').then(res => {
-    // 过滤待收样数据
-    pendingList.value = res.filter(item => item.status === 0)
+  request.get('/biz-delegation', { params: { status: 0 } }).then(res => {
+    pendingList.value = res || []
   }).finally(() => {
     loading.value = false
   })
